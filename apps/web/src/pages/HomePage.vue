@@ -15,8 +15,9 @@ const loading = ref(true)
 const error = ref<string | null>(null)
 
 onMounted(async () => {
+  const base = import.meta.env.VITE_API_URL ?? ''
   try {
-    const res = await fetch('/api/v1/health')
+    const res = await fetch(`${base}/api/v1/health`)
     health.value = await res.json()
   } catch (e) {
     error.value = 'Cannot reach API server'
