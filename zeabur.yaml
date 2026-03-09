@@ -50,9 +50,9 @@ services:
       S3_SECRET_KEY:
         link: minio
       S3_BUCKET:
-        default: familytree-media
+        default: ''
       S3_REGION:
-        default: us-east-1
+        default: ap-southeast-1
       SMTP_HOST:
         default: ''
       SMTP_PORT:
@@ -62,7 +62,7 @@ services:
       SMTP_PASS:
         default: ''
       EMAIL_FROM:
-        default: noreply@familytree.app
+        default: ''
       FRONTEND_URL:
         default: ''
       PORT:

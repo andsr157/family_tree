@@ -8,7 +8,7 @@ version: "3.9"
 
 services:
   postgres:
-    image: postgres:16-alpine
+    image: postgres:17-alpine
     container_name: familytree_postgres
     restart: unless-stopped
     environment:
@@ -20,13 +20,13 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dev -d familytree"]
+      test: ["CMD-SHELL", "pg_isready -U dev -d family_tree"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
-    image: redis:7-alpine
+    image: redis:latest
     container_name: familytree_redis
     restart: unless-stopped
     ports:
