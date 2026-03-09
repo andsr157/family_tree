@@ -1,0 +1,37 @@
+{
+  "name": "web",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint src --ext .vue,.ts",
+    "typecheck": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "^3.5.0",
+    "vue-router": "^4.4.0",
+    "pinia": "^2.2.0",
+    "@vue-flow/core": "^1.0.0",
+    "ofetch": "^1.4.0",
+    "zod": "^3.23.0",
+    "vee-validate": "^4.14.0",
+    "@vee-validate/zod": "^4.14.0",
+    "vue-sonner": "^1.2.0",
+    "date-fns": "^3.6.0",
+    "@vueuse/core": "^11.0.0",
+    "@family-tree/types": "workspace:*",
+    "@family-tree/schemas": "workspace:*"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.1.0",
+    "vite": "^6.0.0",
+    "vue-tsc": "^2.1.0",
+    "typescript": "^5.5.0",
+    "@tailwindcss/vite": "^4.0.0",
+    "tailwindcss": "^4.0.0",
+    "vitest": "^2.0.0",
+    "@vue/test-utils": "^2.4.0"
+  }
+}

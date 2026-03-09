@@ -1,0 +1,78 @@
+# Zeabur Project Configuration
+# Docs: https://zeabur.com/docs
+
+# Monorepo: deploy 2 services (web + api) dari satu repo
+# Managed services yang sudah berjalan di Zeabur project:
+#   - PostgreSQL 17 (existing) → database "family_tree" sudah dibuat
+#   - Redis (deployed)
+#   - MinIO (deployed)
+
+services:
+  # ── Vue 3 Frontend ──
+  - name: web
+    src: apps/web
+    template: node
+    build:
+      type: npm
+      command: pnpm install --frozen-lockfile && pnpm --filter web build
+      output: apps/web/dist
+    deploy:
+      type: static
+    env:
+      VITE_API_URL:
+        default: ''
+        expose: true
+
+  # ── NestJS Backend ──
+  - name: api
+    src: apps/api
+    template: node
+    build:
+      type: npm
+      command: pnpm install --frozen-lockfile && pnpm --filter api build
+    start:
+      command: node apps/api/dist/src/main
+    env:
+      DATABASE_URL:
+        link: postgresql
+        # Database: family_tree (PostgreSQL 17)
+        # Format: postgresql://<user>:<pass>@<host>:5432/family_tree
+      REDIS_URL:
+        link: redis
+      BETTER_AUTH_SECRET:
+        generate: true
+      BETTER_AUTH_URL:
+        default: ''
+      S3_ENDPOINT:
+        link: minio
+      S3_ACCESS_KEY:
+        link: minio
+      S3_SECRET_KEY:
+        link: minio
+      S3_BUCKET:
+        default: familytree-media
+      S3_REGION:
+        default: us-east-1
+      SMTP_HOST:
+        default: ''
+      SMTP_PORT:
+        default: '587'
+      SMTP_USER:
+        default: ''
+      SMTP_PASS:
+        default: ''
+      EMAIL_FROM:
+        default: noreply@familytree.app
+      FRONTEND_URL:
+        default: ''
+      PORT:
+        default: '3000'
+      NODE_ENV:
+        default: production
+      LOG_LEVEL:
+        default: info
+
+# ── Catatan ──
+# Semua managed services sudah berjalan di Zeabur project ini.
+# Pastikan DATABASE_URL yang di-inject sudah mengarah ke database "family_tree".
+# Jika belum, override manual di: Zeabur Dashboard → api service → Variables.
