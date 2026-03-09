@@ -1,0 +1,5 @@
+{
+  "build_command": "pnpm install --frozen-lockfile && pnpm --filter web build",
+  "output_dir": "apps/web/dist",
+  "node_version": "22"
+}

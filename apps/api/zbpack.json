@@ -1,0 +1,5 @@
+{
+  "build_command": "pnpm install --frozen-lockfile && pnpm --filter api build",
+  "start_command": "node apps/api/dist/src/main",
+  "node_version": "22"
+}
