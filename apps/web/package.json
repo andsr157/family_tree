@@ -6,7 +6,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "preview": "vite preview",
     "test": "vitest",
-    "lint": "eslint src --ext .vue,.ts",
+    "lint": "eslint src",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {

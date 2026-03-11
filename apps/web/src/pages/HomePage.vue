@@ -33,10 +33,18 @@ onMounted(async () => {
       <h1 class="text-2xl font-bold text-gray-800 mb-6">🌳 Family Tree — Health Check</h1>
 
       <!-- Loading -->
-      <div v-if="loading" class="text-gray-400 text-sm">Checking services...</div>
+      <div
+        v-if="loading"
+        class="text-gray-400 text-sm"
+      >
+        Checking services...
+      </div>
 
       <!-- Fetch error -->
-      <div v-else-if="error" class="flex items-center gap-2 text-red-600 text-sm">
+      <div
+        v-else-if="error"
+        class="flex items-center gap-2 text-red-600 text-sm"
+      >
         <span class="text-lg">✗</span>
         <span>{{ error }}</span>
       </div>

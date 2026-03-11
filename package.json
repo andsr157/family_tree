@@ -13,6 +13,9 @@
     "build": "pnpm --parallel -r build",
     "test": "pnpm --parallel -r test",
     "lint": "pnpm --parallel -r lint",
+    "lint:fix": "pnpm --parallel -r lint -- --fix",
+    "format": "prettier --write \"apps/**/*.{ts,vue,json}\" \"packages/**/*.{ts,json}\"",
+    "format:check": "prettier --check \"apps/**/*.{ts,vue,json}\" \"packages/**/*.{ts,json}\"",
     "typecheck": "pnpm --parallel -r typecheck",
     "db:push": "pnpm --filter api db:push",
     "db:migrate": "pnpm --filter api db:migrate",
@@ -25,8 +28,16 @@
     "build:api": "pnpm --filter api build"
   },
   "devDependencies": {
-    "typescript": "^5.5.0",
+    "@eslint/js": "^10.0.1",
+    "drizzle-seed": "^0.3.1",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-vue": "^10.8.0",
+    "globals": "^17.4.0",
     "prettier": "^3.3.0",
-    "eslint": "^9.0.0"
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.57.0",
+    "vue-eslint-parser": "^10.4.0"
   }
 }
