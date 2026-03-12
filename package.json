@@ -11,7 +11,7 @@
     "dev": "pnpm build:packages && pnpm --parallel -r dev",
     "dev:web": "pnpm --filter web dev",
     "dev:api": "pnpm --filter api dev",
-    "build": "pnpm build:packages && pnpm --filter api build",
+    "build": "pnpm --parallel -r build",
     "test": "pnpm --parallel -r test",
     "lint": "pnpm --parallel -r lint",
     "lint:fix": "pnpm --parallel -r lint -- --fix",

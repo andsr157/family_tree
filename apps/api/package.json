@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "nest start --watch",
-    "build": "nest build",
+    "build": "pnpm -w build:packages && nest build",
     "start": "node dist/src/main",
     "test": "jest",
     "lint": "eslint src",
