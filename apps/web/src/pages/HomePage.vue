@@ -3,7 +3,6 @@ import { ref, onMounted } from 'vue'
 
 interface HealthResult {
   status: 'ok' | 'degraded'
-  timestamp: string
   services: {
     db: 'ok' | 'error'
     redis: 'ok' | 'error'
@@ -17,9 +16,10 @@ const error = ref<string | null>(null)
 onMounted(async () => {
   const base = import.meta.env.VITE_API_URL ?? ''
   try {
-    const res = await fetch(`${base}/api/v1/health`)
-    health.value = await res.json()
-  } catch (e) {
+    const res = await fetch(`${base}/api/health`)
+    const data = await res.json()
+    health.value = data.data
+  } catch {
     error.value = 'Cannot reach API server'
   } finally {
     loading.value = false
@@ -59,7 +59,6 @@ onMounted(async () => {
           <span class="text-2xl">{{ health.status === 'ok' ? '✅' : '⚠️' }}</span>
           <div>
             <p class="font-semibold text-gray-800 capitalize">{{ health.status }}</p>
-            <p class="text-xs text-gray-400">{{ new Date(health.timestamp).toLocaleString() }}</p>
           </div>
         </div>
 
