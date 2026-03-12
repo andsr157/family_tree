@@ -3,8 +3,9 @@ import { ConfigModule } from '@nestjs/config'
 import { ScheduleModule } from '@nestjs/schedule'
 import { LoggerModule } from 'nestjs-pino'
 import { DatabaseModule } from './db/database.module'
-import { RedisModule } from './redis/redis.module'
-import { HealthModule } from './health/health.module'
+import { RedisModule } from './core/redis/redis.module'
+import { AuthModule } from './core/auth/auth.module'
+import { HealthModule } from './modules/health/health.module'
 
 @Module({
   imports: [
@@ -18,8 +19,8 @@ import { HealthModule } from './health/health.module'
     ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
+    AuthModule,
     HealthModule,
-    // Module fitur ditambahkan di sini saat Sprint 1 mulai
   ],
 })
 export class AppModule {}

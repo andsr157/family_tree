@@ -7,11 +7,14 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "outDir": "dist",
+    "rootDir": "src",
     "baseUrl": ".",
     "types": ["node"],
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@family-tree/schemas": ["../../packages/schemas/dist/index.d.ts"],
+      "@family-tree/types": ["../../packages/types/dist/index.d.ts"]
     }
   },
-  "include": ["src", "drizzle.config.ts"]
+  "include": ["src"]
 }

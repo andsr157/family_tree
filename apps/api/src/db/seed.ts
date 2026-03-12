@@ -11,8 +11,17 @@ async function main() {
   console.log('Resetting database...')
   await reset(db, schema)
 
-  console.log('Seeding tenants...')
-  await seed(db, { tenants: schema.tenants }).refine((f) => ({
+  // password: 'password123' — bcrypt hash (cost 10)
+  const PASSWORD_HASH = '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+
+  console.log('Seeding base tables...')
+  await seed(db, {
+    tenants: schema.tenants,
+    users: schema.users,
+    persons: schema.persons,
+    familyTrees: schema.familyTrees,
+    events: schema.events,
+  }).refine((f) => ({
     tenants: {
       count: 3,
       columns: {
@@ -26,12 +35,6 @@ async function main() {
         deleted_by: f.default({ defaultValue: null }),
       },
     },
-  }))
-
-  console.log('Seeding users...')
-  // password: 'password123' — bcrypt hash (cost 10)
-  const PASSWORD_HASH = '$2b$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
-  await seed(db, { users: schema.users }).refine((f) => ({
     users: {
       count: 5,
       columns: {
@@ -41,6 +44,7 @@ async function main() {
         avatar_url: f.default({ defaultValue: null }),
         email_verified_at: f.default({ defaultValue: null }),
         last_login_at: f.default({ defaultValue: null }),
+        is_platform_admin: f.default({ defaultValue: false }),
         default_focal_person_id: f.default({ defaultValue: null }),
         preferred_zoom_level: f.weightedRandom([
           { weight: 0.2, value: f.default({ defaultValue: 1 }) },
@@ -53,35 +57,6 @@ async function main() {
         deleted_by: f.default({ defaultValue: null }),
       },
     },
-  }))
-
-  console.log('Seeding tenant_members...')
-  await seed(db, { tenantMembers: schema.tenantMembers }).refine((f) => ({
-    tenantMembers: {
-      count: 8,
-      columns: {
-        role: f.weightedRandom([
-          { weight: 0.2, value: f.default({ defaultValue: 'owner' }) },
-          { weight: 0.3, value: f.default({ defaultValue: 'admin' }) },
-          { weight: 0.5, value: f.default({ defaultValue: 'member' }) },
-        ]),
-        invited_by: f.default({ defaultValue: null }),
-        joined_at: f.date({ minDate: '2024-01-01', maxDate: '2025-12-31' }),
-        status: f.weightedRandom([
-          { weight: 0.8, value: f.default({ defaultValue: 'active' }) },
-          { weight: 0.1, value: f.default({ defaultValue: 'suspended' }) },
-          { weight: 0.1, value: f.default({ defaultValue: 'left' }) },
-        ]),
-        created_by: f.default({ defaultValue: null }),
-        updated_by: f.default({ defaultValue: null }),
-        deleted_at: f.default({ defaultValue: null }),
-        deleted_by: f.default({ defaultValue: null }),
-      },
-    },
-  }))
-
-  console.log('Seeding persons...')
-  await seed(db, { persons: schema.persons }).refine((f) => ({
     persons: {
       count: 20,
       columns: {
@@ -107,10 +82,6 @@ async function main() {
         deleted_by: f.default({ defaultValue: null }),
       },
     },
-  }))
-
-  console.log('Seeding family_trees...')
-  await seed(db, { familyTrees: schema.familyTrees }).refine((f) => ({
     familyTrees: {
       count: 4,
       columns: {
@@ -128,56 +99,6 @@ async function main() {
         deleted_by: f.default({ defaultValue: null }),
       },
     },
-  }))
-
-  console.log('Seeding tree_collaborators...')
-  await seed(db, { treeCollaborators: schema.treeCollaborators }).refine((f) => ({
-    treeCollaborators: {
-      count: 10,
-      columns: {
-        role: f.weightedRandom([
-          { weight: 0.2, value: f.default({ defaultValue: 'owner' }) },
-          { weight: 0.3, value: f.default({ defaultValue: 'editor' }) },
-          { weight: 0.5, value: f.default({ defaultValue: 'viewer' }) },
-        ]),
-        invited_by: f.default({ defaultValue: null }),
-        accepted_at: f.date({ minDate: '2024-01-01', maxDate: '2025-12-31' }),
-        updated_by: f.default({ defaultValue: null }),
-        deleted_at: f.default({ defaultValue: null }),
-        deleted_by: f.default({ defaultValue: null }),
-      },
-    },
-  }))
-
-  console.log('Seeding relationships...')
-  await seed(db, { relationships: schema.relationships }).refine((f) => ({
-    relationships: {
-      count: 15,
-      columns: {
-        type: f.weightedRandom([
-          { weight: 0.5, value: f.default({ defaultValue: 'parent-child' }) },
-          { weight: 0.5, value: f.default({ defaultValue: 'couple' }) },
-        ]),
-        subtype: f.default({ defaultValue: null }),
-        start_date: f.date({ minDate: '1950-01-01', maxDate: '2010-01-01' }),
-        end_date: f.default({ defaultValue: null }),
-        order: f.default({ defaultValue: 1 }),
-        notes: f.default({ defaultValue: null }),
-        confidence: f.weightedRandom([
-          { weight: 0.7, value: f.default({ defaultValue: 'confirmed' }) },
-          { weight: 0.15, value: f.default({ defaultValue: 'probable' }) },
-          { weight: 0.1, value: f.default({ defaultValue: 'estimated' }) },
-          { weight: 0.05, value: f.default({ defaultValue: 'disputed' }) },
-        ]),
-        updated_by: f.default({ defaultValue: null }),
-        deleted_at: f.default({ defaultValue: null }),
-        deleted_by: f.default({ defaultValue: null }),
-      },
-    },
-  }))
-
-  console.log('Seeding events...')
-  await seed(db, { events: schema.events }).refine((f) => ({
     events: {
       count: 30,
       columns: {
@@ -215,6 +136,69 @@ async function main() {
       },
     },
   }))
+
+  // Fetch generated IDs for manual junction table inserts
+  const tenantRows = await db.select({ id: schema.tenants.id }).from(schema.tenants)
+  const userRows = await db.select({ id: schema.users.id }).from(schema.users)
+  const personRows = await db.select({ id: schema.persons.id }).from(schema.persons)
+  const treeRows = await db.select({ id: schema.familyTrees.id }).from(schema.familyTrees)
+
+  // Manual inserts guarantee unique (tenant_id, user_id) pairs
+  console.log('Seeding tenant_members...')
+  await db.insert(schema.tenantMembers).values([
+    { tenant_id: tenantRows[0].id, user_id: userRows[0].id, role: 'owner', status: 'active' },
+    { tenant_id: tenantRows[0].id, user_id: userRows[1].id, role: 'admin', status: 'active' },
+    { tenant_id: tenantRows[0].id, user_id: userRows[2].id, role: 'member', status: 'active' },
+    { tenant_id: tenantRows[1].id, user_id: userRows[0].id, role: 'owner', status: 'active' },
+    { tenant_id: tenantRows[1].id, user_id: userRows[3].id, role: 'member', status: 'active' },
+    { tenant_id: tenantRows[2].id, user_id: userRows[1].id, role: 'owner', status: 'active' },
+    { tenant_id: tenantRows[2].id, user_id: userRows[4].id, role: 'admin', status: 'active' },
+    { tenant_id: tenantRows[2].id, user_id: userRows[2].id, role: 'member', status: 'active' },
+  ])
+
+  // Manual inserts guarantee unique (tree_id, user_id) pairs
+  console.log('Seeding tree_collaborators...')
+  await db.insert(schema.treeCollaborators).values([
+    { tree_id: treeRows[0].id, user_id: userRows[0].id, role: 'owner' },
+    { tree_id: treeRows[0].id, user_id: userRows[1].id, role: 'editor' },
+    { tree_id: treeRows[1].id, user_id: userRows[0].id, role: 'owner' },
+    { tree_id: treeRows[1].id, user_id: userRows[2].id, role: 'viewer' },
+    { tree_id: treeRows[2].id, user_id: userRows[1].id, role: 'owner' },
+    { tree_id: treeRows[2].id, user_id: userRows[3].id, role: 'viewer' },
+    { tree_id: treeRows[3].id, user_id: userRows[3].id, role: 'owner' },
+    { tree_id: treeRows[3].id, user_id: userRows[4].id, role: 'editor' },
+    { tree_id: treeRows[3].id, user_id: userRows[0].id, role: 'viewer' },
+    { tree_id: treeRows[2].id, user_id: userRows[4].id, role: 'editor' },
+  ])
+
+  // Manual inserts guarantee non-self-referencing unique pairs
+  console.log('Seeding relationships...')
+  const relPairs: [number, number, 'parent-child' | 'couple'][] = [
+    [0, 1, 'couple'],
+    [0, 2, 'parent-child'],
+    [0, 3, 'parent-child'],
+    [1, 4, 'parent-child'],
+    [1, 5, 'parent-child'],
+    [2, 6, 'couple'],
+    [3, 7, 'parent-child'],
+    [4, 8, 'couple'],
+    [5, 9, 'parent-child'],
+    [6, 10, 'parent-child'],
+    [7, 11, 'couple'],
+    [8, 12, 'parent-child'],
+    [9, 13, 'parent-child'],
+    [10, 14, 'couple'],
+    [11, 15, 'parent-child'],
+  ]
+  await db.insert(schema.relationships).values(
+    relPairs.map(([i, j, type], idx) => ({
+      tenant_id: tenantRows[idx % tenantRows.length].id,
+      person1_id: personRows[i].id,
+      person2_id: personRows[j].id,
+      type,
+      confidence: 'confirmed' as const,
+    })),
+  )
 
   console.log('✅ Seeding complete!')
   await pool.end()

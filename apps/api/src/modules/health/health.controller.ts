@@ -1,12 +1,12 @@
 import { Controller, Get, Inject } from '@nestjs/common'
 import { sql } from 'drizzle-orm'
 import { Redis } from 'ioredis'
-import { DATABASE } from '../db/database.module'
-import { REDIS } from '../redis/redis.module'
+import { DATABASE } from '../../db/database.module'
+import { REDIS } from '../../core/redis/redis.constants'
+import { Public } from '../../core/auth/decorators/public.decorator'
 
 interface HealthResult {
   status: 'ok' | 'degraded'
-  timestamp: string
   services: {
     db: 'ok' | 'error'
     redis: 'ok' | 'error'
@@ -20,11 +20,11 @@ export class HealthController {
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
+  @Public()
   @Get()
   async check(): Promise<HealthResult> {
     const result: HealthResult = {
       status: 'ok',
-      timestamp: new Date().toISOString(),
       services: { db: 'ok', redis: 'ok' },
     }
 
