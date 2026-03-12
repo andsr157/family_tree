@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "nest start --watch",
     "build": "pnpm -w build:packages && nest build",
-    "start": "node dist/src/main",
+    "start": "node dist/main",
     "test": "jest",
     "lint": "eslint src",
     "typecheck": "tsc --noEmit",

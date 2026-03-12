@@ -31,7 +31,7 @@ services:
       type: npm
       command: pnpm install --frozen-lockfile && pnpm build:packages && pnpm --filter api build
     start:
-      command: node apps/api/dist/src/main
+      command: node dist/main
     env:
       DATABASE_URL:
         link: postgresql
