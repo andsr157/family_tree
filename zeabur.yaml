@@ -29,7 +29,7 @@ services:
     template: node
     build:
       type: npm
-      command: pnpm install --frozen-lockfile && pnpm --filter api build
+      command: pnpm install --frozen-lockfile && pnpm build:packages && pnpm --filter api build
     start:
       command: node apps/api/dist/src/main
     env:
