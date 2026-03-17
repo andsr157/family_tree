@@ -1,5 +1,5 @@
 FROM node:22-alpine AS builder
-WORKDIR /app
+WORKDIR /src
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
@@ -15,13 +15,16 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 # Runtime deps and build artifacts only (no app source code)
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/packages/schemas/package.json ./packages/schemas/package.json
-COPY --from=builder /app/packages/schemas/dist ./packages/schemas/dist
-COPY --from=builder /app/packages/types/package.json ./packages/types/package.json
-COPY --from=builder /app/packages/types/dist ./packages/types/dist
+COPY --from=builder /src/node_modules ./node_modules
+COPY --from=builder /src/apps/api/package.json ./apps/api/package.json
+COPY --from=builder /src/apps/api/dist ./apps/api/dist
+COPY --from=builder /src/packages/schemas/package.json ./packages/schemas/package.json
+COPY --from=builder /src/packages/schemas/dist ./packages/schemas/dist
+COPY --from=builder /src/packages/types/package.json ./packages/types/package.json
+COPY --from=builder /src/packages/types/dist ./packages/types/dist
+
+# Compatibility for platforms that force an absolute /src/* start path
+RUN ln -s /app /src
 
 WORKDIR /app/apps/api
 
