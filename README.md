@@ -18,11 +18,7 @@ Monorepo project for a family tree application.
 # Install dependencies
 pnpm install
 
-# Start local infrastructure (PostgreSQL, Redis, MinIO)
-pnpm infra:up
-
-# Copy env
-cp infra/.env.example apps/api/.env
+# Siapkan env apps/api/.env sesuai service database, redis, dan storage yang Anda pakai
 
 # Run all apps
 pnpm dev
