@@ -42,9 +42,9 @@ export class TenantGuard implements CanActivate {
       .from(tenantMembers)
       .where(
         and(
-          eq(tenantMembers.user_id, userId),
-          eq(tenantMembers.tenant_id, tenantId),
-          isNull(tenantMembers.deleted_at),
+          eq(tenantMembers.userId, userId),
+          eq(tenantMembers.tenantId, tenantId),
+          isNull(tenantMembers.deletedAt),
           eq(tenantMembers.status, 'active'),
         ),
       )

@@ -48,7 +48,7 @@ export class SessionAuthGuard implements CanActivate {
     const [user] = await this.db
       .select()
       .from(users)
-      .where(and(eq(users.id, session.userId), isNull(users.deleted_at)))
+      .where(and(eq(users.id, session.userId), isNull(users.deletedAt)))
       .limit(1)
 
     if (!user) {
@@ -61,11 +61,11 @@ export class SessionAuthGuard implements CanActivate {
     request.user = {
       id: user.id,
       email: user.email,
-      fullName: user.full_name,
-      avatarUrl: user.avatar_url,
-      isPlatformAdmin: user.is_platform_admin,
-      defaultFocalPersonId: user.default_focal_person_id,
-      preferredZoomLevel: user.preferred_zoom_level,
+      fullName: user.fullName,
+      avatarUrl: user.avatarUrl,
+      isPlatformAdmin: user.isPlatformAdmin,
+      defaultFocalPersonId: user.defaultFocalPersonId,
+      preferredZoomLevel: user.preferredZoomLevel,
     }
 
     request.sessionId = sessionId

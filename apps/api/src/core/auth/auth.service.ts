@@ -31,7 +31,7 @@ export class AuthService {
     const [existingTenant] = await this.db
       .select({ id: tenants.id })
       .from(tenants)
-      .where(and(eq(tenants.slug, data.slug), isNull(tenants.deleted_at)))
+      .where(and(eq(tenants.slug, data.slug), isNull(tenants.deletedAt)))
       .limit(1)
 
     if (existingTenant) {
@@ -41,7 +41,7 @@ export class AuthService {
     const [existingUser] = await this.db
       .select({ id: users.id })
       .from(users)
-      .where(and(eq(users.email, data.email), isNull(users.deleted_at)))
+      .where(and(eq(users.email, data.email), isNull(users.deletedAt)))
       .limit(1)
 
     if (existingUser) {
@@ -56,7 +56,7 @@ export class AuthService {
         .values({
           name: data.tenantName,
           slug: data.slug,
-          created_by: null,
+          createdBy: null,
         })
         .returning()
 
@@ -65,21 +65,21 @@ export class AuthService {
         .values({
           email: data.email,
           password: passwordHash,
-          full_name: data.fullName,
-          created_by: null,
+          fullName: data.fullName,
+          createdBy: null,
         })
         .returning()
 
-      await tx.update(tenants).set({ created_by: user.id }).where(eq(tenants.id, tenant.id))
-      await tx.update(users).set({ created_by: user.id }).where(eq(users.id, user.id))
+      await tx.update(tenants).set({ createdBy: user.id }).where(eq(tenants.id, tenant.id))
+      await tx.update(users).set({ createdBy: user.id }).where(eq(users.id, user.id))
 
       await tx.insert(tenantMembers).values({
-        tenant_id: tenant.id,
-        user_id: user.id,
+        tenantId: tenant.id,
+        userId: user.id,
         role: 'owner',
         status: 'active',
-        joined_at: new Date(),
-        created_by: user.id,
+        joinedAt: new Date(),
+        createdBy: user.id,
       })
 
       return { user, tenant }
@@ -92,7 +92,7 @@ export class AuthService {
       user: {
         id: result.user.id,
         email: result.user.email,
-        fullName: result.user.full_name,
+        fullName: result.user.fullName,
       },
       tenant: {
         id: result.tenant.id,
@@ -109,7 +109,7 @@ export class AuthService {
     const [user] = await this.db
       .select()
       .from(users)
-      .where(and(eq(users.email, data.email), isNull(users.deleted_at)))
+      .where(and(eq(users.email, data.email), isNull(users.deletedAt)))
       .limit(1)
 
     if (!user) {
@@ -123,19 +123,19 @@ export class AuthService {
 
     const memberships = await this.db
       .select({
-        tenantId: tenantMembers.tenant_id,
+        tenantId: tenantMembers.tenantId,
         role: tenantMembers.role,
         tenantName: tenants.name,
         tenantSlug: tenants.slug,
       })
       .from(tenantMembers)
-      .innerJoin(tenants, eq(tenantMembers.tenant_id, tenants.id))
+      .innerJoin(tenants, eq(tenantMembers.tenantId, tenants.id))
       .where(
         and(
-          eq(tenantMembers.user_id, user.id),
-          isNull(tenantMembers.deleted_at),
+          eq(tenantMembers.userId, user.id),
+          isNull(tenantMembers.deletedAt),
           eq(tenantMembers.status, 'active'),
-          isNull(tenants.deleted_at),
+          isNull(tenants.deletedAt),
         ),
       )
 
@@ -143,9 +143,9 @@ export class AuthService {
     await this.db
       .update(users)
       .set({
-        last_login_at: new Date(),
-        updated_at: new Date(),
-        updated_by: user.id,
+        lastLoginAt: new Date(),
+        updatedAt: new Date(),
+        updatedBy: user.id,
       })
       .where(eq(users.id, user.id))
 
@@ -163,9 +163,9 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.full_name,
-        avatarUrl: user.avatar_url,
-        isPlatformAdmin: user.is_platform_admin,
+        fullName: user.fullName,
+        avatarUrl: user.avatarUrl,
+        isPlatformAdmin: user.isPlatformAdmin,
       },
       tenants: tenantList,
       currentTenant:
@@ -182,7 +182,7 @@ export class AuthService {
     const [user] = await this.db
       .select()
       .from(users)
-      .where(and(eq(users.id, userId), isNull(users.deleted_at)))
+      .where(and(eq(users.id, userId), isNull(users.deletedAt)))
       .limit(1)
 
     if (!user) throw new UnauthorizedException()
@@ -195,12 +195,12 @@ export class AuthService {
         tenantSlug: tenants.slug,
       })
       .from(tenantMembers)
-      .innerJoin(tenants, eq(tenantMembers.tenant_id, tenants.id))
+      .innerJoin(tenants, eq(tenantMembers.tenantId, tenants.id))
       .where(
         and(
-          eq(tenantMembers.user_id, userId),
-          eq(tenantMembers.tenant_id, tenantId),
-          isNull(tenantMembers.deleted_at),
+          eq(tenantMembers.userId, userId),
+          eq(tenantMembers.tenantId, tenantId),
+          isNull(tenantMembers.deletedAt),
           eq(tenantMembers.status, 'active'),
         ),
       )
@@ -212,11 +212,11 @@ export class AuthService {
       user: {
         id: user.id,
         email: user.email,
-        fullName: user.full_name,
-        avatarUrl: user.avatar_url,
-        isPlatformAdmin: user.is_platform_admin,
-        defaultFocalPersonId: user.default_focal_person_id,
-        preferredZoomLevel: user.preferred_zoom_level,
+        fullName: user.fullName,
+        avatarUrl: user.avatarUrl,
+        isPlatformAdmin: user.isPlatformAdmin,
+        defaultFocalPersonId: user.defaultFocalPersonId,
+        preferredZoomLevel: user.preferredZoomLevel,
       },
       tenant: {
         id: membership.tenantId,

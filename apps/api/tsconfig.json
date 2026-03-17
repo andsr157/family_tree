@@ -16,5 +16,5 @@
       "@family-tree/types": ["../../packages/types/dist/index.d.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src", "drizzle.config.ts"]
 }

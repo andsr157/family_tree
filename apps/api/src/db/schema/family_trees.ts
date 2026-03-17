@@ -8,17 +8,17 @@ export const familyTrees = pgTable(
   'family_trees',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    tenant_id: uuid('tenant_id')
+    tenantId: uuid('tenant_id')
       .notNull()
       .references(() => tenants.id, { onDelete: 'cascade' }),
     name: varchar('name', { length: 255 }).notNull(),
     description: text('description'),
-    root_person_id: uuid('root_person_id')
+    rootPersonId: uuid('root_person_id')
       .notNull()
       .references(() => persons.id),
     visibility: varchar('visibility', { length: 20 }).notNull().default('private'),
     settings: jsonb('settings').$type<Record<string, unknown>>().notNull().default({}),
-    default_focal_person_id: uuid('default_focal_person_id').references(() => persons.id, {
+    defaultFocalPersonId: uuid('default_focal_person_id').references(() => persons.id, {
       onDelete: 'set null',
     }),
     ...metadataFields,

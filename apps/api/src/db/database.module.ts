@@ -15,7 +15,7 @@ export const DATABASE = Symbol('DATABASE')
         const pool = new Pool({
           connectionString: config.getOrThrow<string>('DATABASE_URL'),
         })
-        return drizzle({ client: pool })
+        return drizzle({ client: pool, casing: 'snake_case' })
       },
     },
   ],

@@ -1,10 +1,10 @@
 import { uuid, timestamp } from 'drizzle-orm/pg-core'
 
 export const metadataFields = {
-  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-  created_by: uuid('created_by'),
-  updated_by: uuid('updated_by'),
-  deleted_at: timestamp('deleted_at', { withTimezone: true }),
-  deleted_by: uuid('deleted_by'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  createdBy: uuid('created_by'),
+  updatedBy: uuid('updated_by'),
+  deletedAt: timestamp('deleted_at', { withTimezone: true }),
+  deletedBy: uuid('deleted_by'),
 }

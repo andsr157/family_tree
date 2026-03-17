@@ -8,33 +8,33 @@ export const persons = pgTable(
   'persons',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    tenant_id: uuid('tenant_id')
+    tenantId: uuid('tenant_id')
       .notNull()
       .references(() => tenants.id, { onDelete: 'cascade' }),
-    first_name: varchar('first_name', { length: 100 }).notNull(),
-    last_name: varchar('last_name', { length: 100 }),
+    firstName: varchar('first_name', { length: 100 }).notNull(),
+    lastName: varchar('last_name', { length: 100 }),
     nickname: varchar('nickname', { length: 100 }),
     gender: varchar('gender', { length: 10 }).notNull(),
-    is_alive: boolean('is_alive').notNull().default(true),
+    isAlive: boolean('is_alive').notNull().default(true),
     bio: text('bio'),
-    avatar_url: text('avatar_url'),
-    is_private: boolean('is_private').notNull().default(false),
-    linked_user_id: uuid('linked_user_id')
+    avatarUrl: text('avatar_url'),
+    isPrivate: boolean('is_private').notNull().default(false),
+    linkedUserId: uuid('linked_user_id')
       .unique()
       .references(() => users.id, { onDelete: 'set null' }),
-    is_claimable: boolean('is_claimable').notNull().default(false),
+    isClaimable: boolean('is_claimable').notNull().default(false),
     ...metadataFields,
   },
   (table) => [
-    index('idx_persons_tenant').on(table.tenant_id),
+    index('idx_persons_tenant').on(table.tenantId),
     index('idx_persons_name').using(
       'gin',
-      sql`(${table.first_name} || ' ' || COALESCE(${table.last_name}, '')) gin_trgm_ops`,
+      sql`(${table.firstName} || ' ' || COALESCE(${table.lastName}, '')) gin_trgm_ops`,
     ),
     check('persons_gender_check', sql`${table.gender} IN ('male', 'female', 'other')`),
-    check('chk_alive_if_linked', sql`${table.linked_user_id} IS NULL OR ${table.is_alive} = TRUE`),
+    check('chk_alive_if_linked', sql`${table.linkedUserId} IS NULL OR ${table.isAlive} = TRUE`),
     index('idx_persons_linked_user')
-      .on(table.linked_user_id)
-      .where(sql`${table.linked_user_id} IS NOT NULL`),
+      .on(table.linkedUserId)
+      .where(sql`${table.linkedUserId} IS NOT NULL`),
   ],
 )

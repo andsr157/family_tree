@@ -28,11 +28,11 @@ async function main() {
         name: f.companyName(),
         slug: f.firstName(),
         description: f.loremIpsum(),
-        logo_url: f.default({ defaultValue: null }),
-        created_by: f.default({ defaultValue: null }),
-        updated_by: f.default({ defaultValue: null }),
-        deleted_at: f.default({ defaultValue: null }),
-        deleted_by: f.default({ defaultValue: null }),
+        logoUrl: f.default({ defaultValue: null }),
+        createdBy: f.default({ defaultValue: null }),
+        updatedBy: f.default({ defaultValue: null }),
+        deletedAt: f.default({ defaultValue: null }),
+        deletedBy: f.default({ defaultValue: null }),
       },
     },
     users: {
@@ -40,46 +40,46 @@ async function main() {
       columns: {
         email: f.email(),
         password: f.default({ defaultValue: PASSWORD_HASH }),
-        full_name: f.fullName(),
-        avatar_url: f.default({ defaultValue: null }),
-        email_verified_at: f.default({ defaultValue: null }),
-        last_login_at: f.default({ defaultValue: null }),
-        is_platform_admin: f.default({ defaultValue: false }),
-        default_focal_person_id: f.default({ defaultValue: null }),
-        preferred_zoom_level: f.weightedRandom([
+        fullName: f.fullName(),
+        avatarUrl: f.default({ defaultValue: null }),
+        emailVerifiedAt: f.default({ defaultValue: null }),
+        lastLoginAt: f.default({ defaultValue: null }),
+        isPlatformAdmin: f.default({ defaultValue: false }),
+        defaultFocalPersonId: f.default({ defaultValue: null }),
+        preferredZoomLevel: f.weightedRandom([
           { weight: 0.2, value: f.default({ defaultValue: 1 }) },
           { weight: 0.6, value: f.default({ defaultValue: 2 }) },
           { weight: 0.2, value: f.default({ defaultValue: 3 }) },
         ]),
-        created_by: f.default({ defaultValue: null }),
-        updated_by: f.default({ defaultValue: null }),
-        deleted_at: f.default({ defaultValue: null }),
-        deleted_by: f.default({ defaultValue: null }),
+        createdBy: f.default({ defaultValue: null }),
+        updatedBy: f.default({ defaultValue: null }),
+        deletedAt: f.default({ defaultValue: null }),
+        deletedBy: f.default({ defaultValue: null }),
       },
     },
     persons: {
       count: 20,
       columns: {
-        first_name: f.firstName(),
-        last_name: f.lastName(),
+        firstName: f.firstName(),
+        lastName: f.lastName(),
         nickname: f.default({ defaultValue: null }),
         gender: f.weightedRandom([
           { weight: 0.48, value: f.default({ defaultValue: 'male' }) },
           { weight: 0.48, value: f.default({ defaultValue: 'female' }) },
           { weight: 0.04, value: f.default({ defaultValue: 'other' }) },
         ]),
-        is_alive: f.weightedRandom([
+        isAlive: f.weightedRandom([
           { weight: 0.8, value: f.default({ defaultValue: true }) },
           { weight: 0.2, value: f.default({ defaultValue: false }) },
         ]),
         bio: f.loremIpsum(),
-        avatar_url: f.default({ defaultValue: null }),
-        is_private: f.default({ defaultValue: false }),
-        linked_user_id: f.default({ defaultValue: null }),
-        is_claimable: f.default({ defaultValue: false }),
-        updated_by: f.default({ defaultValue: null }),
-        deleted_at: f.default({ defaultValue: null }),
-        deleted_by: f.default({ defaultValue: null }),
+        avatarUrl: f.default({ defaultValue: null }),
+        isPrivate: f.default({ defaultValue: false }),
+        linkedUserId: f.default({ defaultValue: null }),
+        isClaimable: f.default({ defaultValue: false }),
+        updatedBy: f.default({ defaultValue: null }),
+        deletedAt: f.default({ defaultValue: null }),
+        deletedBy: f.default({ defaultValue: null }),
       },
     },
     familyTrees: {
@@ -93,16 +93,16 @@ async function main() {
           { weight: 0.2, value: f.default({ defaultValue: 'public' }) },
         ]),
         settings: f.default({ defaultValue: {} }),
-        default_focal_person_id: f.default({ defaultValue: null }),
-        updated_by: f.default({ defaultValue: null }),
-        deleted_at: f.default({ defaultValue: null }),
-        deleted_by: f.default({ defaultValue: null }),
+        defaultFocalPersonId: f.default({ defaultValue: null }),
+        updatedBy: f.default({ defaultValue: null }),
+        deletedAt: f.default({ defaultValue: null }),
+        deletedBy: f.default({ defaultValue: null }),
       },
     },
     events: {
       count: 30,
       columns: {
-        relationship_id: f.default({ defaultValue: null }),
+        relationshipId: f.default({ defaultValue: null }),
         type: f.weightedRandom([
           { weight: 0.2, value: f.default({ defaultValue: 'birth' }) },
           { weight: 0.1, value: f.default({ defaultValue: 'death' }) },
@@ -116,23 +116,23 @@ async function main() {
           { weight: 0.05, value: f.default({ defaultValue: 'other' }) },
         ]),
         date: f.date({ minDate: '1900-01-01', maxDate: '2025-12-31' }),
-        date_text: f.default({ defaultValue: null }),
-        date_qualifier: f.weightedRandom([
+        dateText: f.default({ defaultValue: null }),
+        dateQualifier: f.weightedRandom([
           { weight: 0.6, value: f.default({ defaultValue: 'exact' }) },
           { weight: 0.2, value: f.default({ defaultValue: 'about' }) },
           { weight: 0.1, value: f.default({ defaultValue: 'before' }) },
           { weight: 0.1, value: f.default({ defaultValue: 'after' }) },
         ]),
         place: f.city(),
-        place_detail: f.default({ defaultValue: null }),
+        placeDetail: f.default({ defaultValue: null }),
         description: f.loremIpsum(),
-        is_primary: f.weightedRandom([
+        isPrimary: f.weightedRandom([
           { weight: 0.3, value: f.default({ defaultValue: true }) },
           { weight: 0.7, value: f.default({ defaultValue: false }) },
         ]),
-        updated_by: f.default({ defaultValue: null }),
-        deleted_at: f.default({ defaultValue: null }),
-        deleted_by: f.default({ defaultValue: null }),
+        updatedBy: f.default({ defaultValue: null }),
+        deletedAt: f.default({ defaultValue: null }),
+        deletedBy: f.default({ defaultValue: null }),
       },
     },
   }))
@@ -143,32 +143,32 @@ async function main() {
   const personRows = await db.select({ id: schema.persons.id }).from(schema.persons)
   const treeRows = await db.select({ id: schema.familyTrees.id }).from(schema.familyTrees)
 
-  // Manual inserts guarantee unique (tenant_id, user_id) pairs
+  // Manual inserts guarantee unique (tenantId, userId) pairs
   console.log('Seeding tenant_members...')
   await db.insert(schema.tenantMembers).values([
-    { tenant_id: tenantRows[0].id, user_id: userRows[0].id, role: 'owner', status: 'active' },
-    { tenant_id: tenantRows[0].id, user_id: userRows[1].id, role: 'admin', status: 'active' },
-    { tenant_id: tenantRows[0].id, user_id: userRows[2].id, role: 'member', status: 'active' },
-    { tenant_id: tenantRows[1].id, user_id: userRows[0].id, role: 'owner', status: 'active' },
-    { tenant_id: tenantRows[1].id, user_id: userRows[3].id, role: 'member', status: 'active' },
-    { tenant_id: tenantRows[2].id, user_id: userRows[1].id, role: 'owner', status: 'active' },
-    { tenant_id: tenantRows[2].id, user_id: userRows[4].id, role: 'admin', status: 'active' },
-    { tenant_id: tenantRows[2].id, user_id: userRows[2].id, role: 'member', status: 'active' },
+    { tenantId: tenantRows[0].id, userId: userRows[0].id, role: 'owner', status: 'active' },
+    { tenantId: tenantRows[0].id, userId: userRows[1].id, role: 'admin', status: 'active' },
+    { tenantId: tenantRows[0].id, userId: userRows[2].id, role: 'member', status: 'active' },
+    { tenantId: tenantRows[1].id, userId: userRows[0].id, role: 'owner', status: 'active' },
+    { tenantId: tenantRows[1].id, userId: userRows[3].id, role: 'member', status: 'active' },
+    { tenantId: tenantRows[2].id, userId: userRows[1].id, role: 'owner', status: 'active' },
+    { tenantId: tenantRows[2].id, userId: userRows[4].id, role: 'admin', status: 'active' },
+    { tenantId: tenantRows[2].id, userId: userRows[2].id, role: 'member', status: 'active' },
   ])
 
-  // Manual inserts guarantee unique (tree_id, user_id) pairs
+  // Manual inserts guarantee unique (treeId, userId) pairs
   console.log('Seeding tree_collaborators...')
   await db.insert(schema.treeCollaborators).values([
-    { tree_id: treeRows[0].id, user_id: userRows[0].id, role: 'owner' },
-    { tree_id: treeRows[0].id, user_id: userRows[1].id, role: 'editor' },
-    { tree_id: treeRows[1].id, user_id: userRows[0].id, role: 'owner' },
-    { tree_id: treeRows[1].id, user_id: userRows[2].id, role: 'viewer' },
-    { tree_id: treeRows[2].id, user_id: userRows[1].id, role: 'owner' },
-    { tree_id: treeRows[2].id, user_id: userRows[3].id, role: 'viewer' },
-    { tree_id: treeRows[3].id, user_id: userRows[3].id, role: 'owner' },
-    { tree_id: treeRows[3].id, user_id: userRows[4].id, role: 'editor' },
-    { tree_id: treeRows[3].id, user_id: userRows[0].id, role: 'viewer' },
-    { tree_id: treeRows[2].id, user_id: userRows[4].id, role: 'editor' },
+    { treeId: treeRows[0].id, userId: userRows[0].id, role: 'owner' },
+    { treeId: treeRows[0].id, userId: userRows[1].id, role: 'editor' },
+    { treeId: treeRows[1].id, userId: userRows[0].id, role: 'owner' },
+    { treeId: treeRows[1].id, userId: userRows[2].id, role: 'viewer' },
+    { treeId: treeRows[2].id, userId: userRows[1].id, role: 'owner' },
+    { treeId: treeRows[2].id, userId: userRows[3].id, role: 'viewer' },
+    { treeId: treeRows[3].id, userId: userRows[3].id, role: 'owner' },
+    { treeId: treeRows[3].id, userId: userRows[4].id, role: 'editor' },
+    { treeId: treeRows[3].id, userId: userRows[0].id, role: 'viewer' },
+    { treeId: treeRows[2].id, userId: userRows[4].id, role: 'editor' },
   ])
 
   // Manual inserts guarantee non-self-referencing unique pairs
@@ -192,9 +192,9 @@ async function main() {
   ]
   await db.insert(schema.relationships).values(
     relPairs.map(([i, j, type], idx) => ({
-      tenant_id: tenantRows[idx % tenantRows.length].id,
-      person1_id: personRows[i].id,
-      person2_id: personRows[j].id,
+      tenantId: tenantRows[idx % tenantRows.length].id,
+      person1Id: personRows[i].id,
+      person2Id: personRows[j].id,
       type,
       confidence: 'confirmed' as const,
     })),
