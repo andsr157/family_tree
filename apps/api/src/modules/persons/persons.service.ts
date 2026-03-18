@@ -58,7 +58,7 @@ export class PersonsService {
   }
 
   async findById(id: string, ctx: ServiceContext) {
-    const person = await this.personsRepo.findById(id, ctx.tenantId)
+    const person = await this.personsRepo.findById(ctx.tenantId, id)
 
     if (!person) {
       throw new NotFoundException('Person not found')
@@ -95,7 +95,7 @@ export class PersonsService {
 
   async update(id: string, dto: UpdatePersonDto, ctx: ServiceContext) {
     // Ensure the person exists.
-    const existing = await this.personsRepo.findById(id, ctx.tenantId)
+    const existing = await this.personsRepo.findById(ctx.tenantId, id)
     if (!existing) {
       throw new NotFoundException('Person not found')
     }
@@ -136,7 +136,7 @@ export class PersonsService {
   }
 
   async softDelete(id: string, ctx: ServiceContext) {
-    const existing = await this.personsRepo.findById(id, ctx.tenantId)
+    const existing = await this.personsRepo.findById(ctx.tenantId, id)
     if (!existing) {
       throw new NotFoundException('Person not found')
     }
@@ -148,7 +148,7 @@ export class PersonsService {
       )
     }
 
-    const deleted = await this.personsRepo.softDelete(id, ctx.tenantId, ctx.userId)
+    const deleted = await this.personsRepo.softDelete(ctx.tenantId, id, ctx.userId)
 
     await this.auditLogsRepo.create({
       tenantId: ctx.tenantId,
