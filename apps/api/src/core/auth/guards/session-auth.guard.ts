@@ -3,25 +3,17 @@ import {
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
-  Inject,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { eq, and, isNull } from 'drizzle-orm'
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator'
-import { RedisService } from '../../redis/redis.service'
-import { DATABASE } from '../../../db/database.module'
-import { users } from '../../../db/schema'
-import type { SessionData } from '../auth.types'
-
-const SESSION_TTL = 60 * 60 * 24 * 7 // 7 hari
-
+import { AuthRepository } from '../repositories/auth.repository'
+import { SessionRepository } from '../repositories/session.repository'
 @Injectable()
 export class SessionAuthGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private redis: RedisService,
-    @Inject(DATABASE) private db: NodePgDatabase,
+    private authRepo: AuthRepository,
+    private sessionRepo: SessionRepository,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -38,25 +30,18 @@ export class SessionAuthGuard implements CanActivate {
       throw new UnauthorizedException('Session not found')
     }
 
-    const raw = await this.redis.getSession(sessionId)
-    if (!raw) {
+    const session = await this.sessionRepo.getSession(sessionId)
+    if (!session) {
       throw new UnauthorizedException('Session expired or invalid')
     }
 
-    const session: SessionData = JSON.parse(raw)
-
-    const [user] = await this.db
-      .select()
-      .from(users)
-      .where(and(eq(users.id, session.userId), isNull(users.deletedAt)))
-      .limit(1)
-
+    const user = await this.authRepo.findUserById(session.userId)
     if (!user) {
       throw new UnauthorizedException('User not found')
     }
 
     // Sliding expiry
-    await this.redis.refreshSessionTTL(sessionId, SESSION_TTL)
+    await this.sessionRepo.refreshTTL(sessionId)
 
     request.user = {
       id: user.id,

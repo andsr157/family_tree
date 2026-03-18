@@ -5,8 +5,11 @@ import { Pool } from 'pg'
 import * as schema from './schema'
 
 export const DATABASE = Symbol('DATABASE')
-export type DatabaseClient = NodePgDatabase<typeof schema>
 
+export type DatabaseClient = NodePgDatabase<typeof schema>
+export type DatabaseTx = Parameters<Parameters<DatabaseClient['transaction']>[0]>[0]
+
+export type TransactionCallback<T> = (tx: DatabaseTx) => Promise<T>
 @Global()
 @Module({
   providers: [

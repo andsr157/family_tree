@@ -1,7 +1,12 @@
 import { Injectable, Inject } from '@nestjs/common'
-import { DATABASE, type DatabaseClient } from '@/db/database.module'
-import { persons } from '@/db/schema'
 import { and, asc, desc, eq, like, isNull, or, sql, type SQL } from 'drizzle-orm'
+import { DATABASE } from '@/db/database.module'
+import type {
+  DatabaseClient,
+  DatabaseTx,
+  TransactionCallback,
+} from '@/db/database.module'
+import { persons } from '@/db/schema'
 import type { CreatePersonDto } from './dto/create-person.dto'
 import type { UpdatePersonDto } from './dto/update-person.dto'
 
@@ -21,6 +26,10 @@ export interface PersonQueryOptions {
 @Injectable()
 export class PersonsRepository {
   constructor(@Inject(DATABASE) private db: DatabaseClient) {}
+
+  async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
+    return this.db.transaction(callback)
+  }
 
   async findMany(filters: PersonFilters, options: PersonQueryOptions) {
     const conditions = this.buildConditions(filters)
@@ -75,8 +84,10 @@ export class PersonsRepository {
       createdBy: string
       updatedBy: string
     },
+    tx?: DatabaseTx,
   ) {
-    const [person] = await this.db
+    const client = tx ?? this.db
+    const [person] = await client
       .insert(persons)
       .values({
         ...data,
@@ -93,8 +104,10 @@ export class PersonsRepository {
     data: UpdatePersonDto & {
       updatedBy: string
     },
+    tx?: DatabaseTx,
   ) {
-    const [person] = await this.db
+    const client = tx ?? this.db
+    const [person] = await client
       .update(persons)
       .set({
         ...data,
@@ -111,8 +124,14 @@ export class PersonsRepository {
     return person
   }
 
-  async softDelete(tenantId: string, personId: string, deletedBy: string) {
-    const [person] = await this.db
+  async softDelete(
+    tenantId: string,
+    personId: string,
+    deletedBy: string,
+    tx?: DatabaseTx,
+  ) {
+    const client = tx ?? this.db
+    const [person] = await client
       .update(persons)
       .set({
         deletedAt: new Date(),

@@ -73,24 +73,32 @@ export class PersonsService {
       throw new BadRequestException('A deceased person cannot be set as claimable')
     }
 
-    const person = await this.personsRepo.create({
-      ...dto,
-      tenantId: ctx.tenantId,
-      createdBy: ctx.userId,
-      updatedBy: ctx.userId,
-    })
+    return this.personsRepo.withTransaction(async (tx) => {
+      const person = await this.personsRepo.create(
+        {
+          ...dto,
+          tenantId: ctx.tenantId,
+          createdBy: ctx.userId,
+          updatedBy: ctx.userId,
+        },
+        tx,
+      )
 
-    await this.auditLogsRepo.create({
-      tenantId: ctx.tenantId,
-      userId: ctx.userId,
-      action: 'CREATE',
-      entityType: 'person',
-      entityId: person.id,
-      oldData: null,
-      newData: person,
-    })
+      await this.auditLogsRepo.create(
+        {
+          tenantId: ctx.tenantId,
+          userId: ctx.userId,
+          action: 'CREATE',
+          entityType: 'person',
+          entityId: person.id,
+          oldData: null,
+          newData: person,
+        },
+        tx,
+      )
 
-    return person
+      return person
+    })
   }
 
   async update(id: string, dto: UpdatePersonDto, ctx: ServiceContext) {
@@ -113,26 +121,32 @@ export class PersonsService {
       throw new BadRequestException('A deceased person cannot be set as claimable')
     }
 
-    const updated = await this.personsRepo.update(id, ctx.tenantId, {
-      ...dto,
-      updatedBy: ctx.userId,
+    return this.personsRepo.withTransaction(async (tx) => {
+      const updated = await this.personsRepo.update(
+        id,
+        ctx.tenantId,
+        { ...dto, updatedBy: ctx.userId },
+        tx,
+      )
+
+      if (!updated)
+        throw new NotFoundException('Person tidak ditemukan atau sudah dihapus')
+
+      await this.auditLogsRepo.create(
+        {
+          tenantId: ctx.tenantId,
+          userId: ctx.userId,
+          action: 'UPDATE',
+          entityType: 'person',
+          entityId: id,
+          oldData: existing,
+          newData: updated,
+        },
+        tx,
+      )
+
+      return updated
     })
-
-    if (!updated) {
-      throw new NotFoundException('Person not found or already deleted')
-    }
-
-    await this.auditLogsRepo.create({
-      tenantId: ctx.tenantId,
-      userId: ctx.userId,
-      action: 'UPDATE',
-      entityType: 'person',
-      entityId: id,
-      oldData: existing,
-      newData: updated,
-    })
-
-    return updated
   }
 
   async softDelete(id: string, ctx: ServiceContext) {
@@ -148,18 +162,23 @@ export class PersonsService {
       )
     }
 
-    const deleted = await this.personsRepo.softDelete(ctx.tenantId, id, ctx.userId)
+    return this.personsRepo.withTransaction(async (tx) => {
+      const deleted = await this.personsRepo.softDelete(id, ctx.tenantId, ctx.userId, tx)
 
-    await this.auditLogsRepo.create({
-      tenantId: ctx.tenantId,
-      userId: ctx.userId,
-      action: 'DELETE',
-      entityType: 'person',
-      entityId: id,
-      oldData: existing,
-      newData: null,
+      await this.auditLogsRepo.create(
+        {
+          tenantId: ctx.tenantId,
+          userId: ctx.userId,
+          action: 'DELETE',
+          entityType: 'person',
+          entityId: id,
+          oldData: existing,
+          newData: null,
+        },
+        tx,
+      )
+
+      return deleted
     })
-
-    return deleted
   }
 }

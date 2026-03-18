@@ -4,20 +4,16 @@ import {
   ExecutionContext,
   ForbiddenException,
   BadRequestException,
-  Inject,
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
-import { NodePgDatabase } from 'drizzle-orm/node-postgres'
-import { and, eq, isNull } from 'drizzle-orm'
 import { IS_PUBLIC_KEY } from '../decorators/public.decorator'
-import { DATABASE } from '../../../db/database.module'
-import { tenantMembers } from '../../../db/schema'
+import { AuthRepository } from '../repositories/auth.repository'
 
 @Injectable()
 export class TenantGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    @Inject(DATABASE) private db: NodePgDatabase,
+    private authRepo: AuthRepository,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -37,18 +33,7 @@ export class TenantGuard implements CanActivate {
     const userId = request.user?.id
     if (!userId) return false
 
-    const [membership] = await this.db
-      .select()
-      .from(tenantMembers)
-      .where(
-        and(
-          eq(tenantMembers.userId, userId),
-          eq(tenantMembers.tenantId, tenantId),
-          isNull(tenantMembers.deletedAt),
-          eq(tenantMembers.status, 'active'),
-        ),
-      )
-      .limit(1)
+    const membership = await this.authRepo.findMembership(userId, tenantId)
 
     if (!membership) {
       throw new ForbiddenException('You are not a member of this tenant')
