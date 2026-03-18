@@ -1,4 +1,10 @@
-import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common'
+import {
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common'
 import { Response } from 'express'
 import type { ApiResponse } from './api-response'
 
@@ -20,7 +26,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         message = exceptionResponse
       } else if (typeof exceptionResponse === 'object' && exceptionResponse !== null) {
         const obj = exceptionResponse as Record<string, unknown>
-        message = (obj.message as string) ?? exception.message
+        if (Array.isArray(obj.message)) {
+          message = obj.message.join(', ')
+        } else {
+          message = (obj.message as string) ?? exception.message
+        }
+
         if (obj.errors) {
           errors = obj.errors as Record<string, string[]>
         }

@@ -1,4 +1,5 @@
 import type { TenantRole } from '@family-tree/types'
+export type { TenantRole }
 
 export interface ServiceContext {
   tenantId: string

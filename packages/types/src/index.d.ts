@@ -1,3 +1,10 @@
+export interface ApiResponse<T = unknown> {
+  success: boolean
+  data: T | null
+  message: string | null
+  errors: Record<string, string[]> | null
+  timestamp: string
+}
 export interface AuthUser {
   id: string
   email: string
