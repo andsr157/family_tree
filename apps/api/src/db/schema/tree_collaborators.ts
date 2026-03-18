@@ -1,4 +1,11 @@
-import { pgTable, uuid, varchar, timestamp, uniqueIndex, check } from 'drizzle-orm/pg-core'
+import {
+  pgTable,
+  uuid,
+  varchar,
+  timestamp,
+  uniqueIndex,
+  check,
+} from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import { familyTrees } from './family_trees'
 import { users } from './users'
@@ -22,6 +29,9 @@ export const treeCollaborators = pgTable(
   },
   (table) => [
     uniqueIndex('tree_collaborators_tree_user_unique').on(table.treeId, table.userId),
-    check('tree_collaborators_role_check', sql`${table.role} IN ('owner', 'editor', 'viewer')`),
+    check(
+      'tree_collaborators_role_check',
+      sql`${table.role} IN ('owner', 'editor', 'viewer')`,
+    ),
   ],
 )

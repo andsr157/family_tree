@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { PersonsRepository } from './persons.repository'
+import { AuditLogsRepository } from '../audit-logs/audit-logs.repository'
 import type { ServiceContext } from '@/common/types'
 import type { CreatePersonDto } from './dto/create-person.dto'
 import type { UpdatePersonDto } from './dto/update-person.dto'
@@ -7,7 +8,10 @@ import type { QueryPersonDto } from './dto/query-person.dto'
 
 @Injectable()
 export class PersonsService {
-  constructor(private personsRepo: PersonsRepository) {}
+  constructor(
+    private personsRepo: PersonsRepository,
+    private auditLogsRepo: AuditLogsRepository,
+  ) {}
 
   async findAll(ctx: ServiceContext, query: QueryPersonDto) {
     const { q, page, pageSize, isAlive, sort } = query
@@ -76,6 +80,16 @@ export class PersonsService {
       updatedBy: ctx.userId,
     })
 
+    await this.auditLogsRepo.create({
+      tenantId: ctx.tenantId,
+      userId: ctx.userId,
+      action: 'CREATE',
+      entityType: 'person',
+      entityId: person.id,
+      oldData: null,
+      newData: person,
+    })
+
     return person
   }
 
@@ -107,6 +121,17 @@ export class PersonsService {
     if (!updated) {
       throw new NotFoundException('Person not found or already deleted')
     }
+
+    await this.auditLogsRepo.create({
+      tenantId: ctx.tenantId,
+      userId: ctx.userId,
+      action: 'UPDATE',
+      entityType: 'person',
+      entityId: id,
+      oldData: existing,
+      newData: updated,
+    })
+
     return updated
   }
 
@@ -124,6 +149,16 @@ export class PersonsService {
     }
 
     const deleted = await this.personsRepo.softDelete(id, ctx.tenantId, ctx.userId)
+
+    await this.auditLogsRepo.create({
+      tenantId: ctx.tenantId,
+      userId: ctx.userId,
+      action: 'DELETE',
+      entityType: 'person',
+      entityId: id,
+      oldData: existing,
+      newData: null,
+    })
 
     return deleted
   }

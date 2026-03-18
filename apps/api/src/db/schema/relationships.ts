@@ -40,7 +40,12 @@ export const relationships = pgTable(
     index('idx_rel_tenant').on(table.tenantId),
     index('idx_rel_person1').on(table.person1Id),
     index('idx_rel_person2').on(table.person2Id),
-    uniqueIndex('rel_unique_pair').on(table.person1Id, table.person2Id, table.type, table.order),
+    uniqueIndex('rel_unique_pair').on(
+      table.person1Id,
+      table.person2Id,
+      table.type,
+      table.order,
+    ),
     check('rel_type_check', sql`${table.type} IN ('couple', 'parent-child')`),
     check(
       'rel_confidence_check',

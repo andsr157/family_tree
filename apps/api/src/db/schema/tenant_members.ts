@@ -1,4 +1,12 @@
-import { uuid, varchar, timestamp, pgTable, check, uniqueIndex, index } from 'drizzle-orm/pg-core'
+import {
+  uuid,
+  varchar,
+  timestamp,
+  pgTable,
+  check,
+  uniqueIndex,
+  index,
+} from 'drizzle-orm/pg-core'
 import { sql } from 'drizzle-orm'
 import { tenants } from './tenants'
 import { users } from './users'
@@ -24,7 +32,13 @@ export const tenantMembers = pgTable(
     uniqueIndex('tenant_members_tenant_user_unique').on(table.tenantId, table.userId),
     index('idx_tenant_members_tenant').on(table.tenantId),
     index('idx_tenant_members_user').on(table.userId),
-    check('tenant_members_role_check', sql`${table.role} IN ('owner', 'admin', 'member')`),
-    check('tenant_members_status_check', sql`${table.status} IN ('active', 'suspended', 'left')`),
+    check(
+      'tenant_members_role_check',
+      sql`${table.role} IN ('owner', 'admin', 'member')`,
+    ),
+    check(
+      'tenant_members_status_check',
+      sql`${table.status} IN ('active', 'suspended', 'left')`,
+    ),
   ],
 )

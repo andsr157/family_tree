@@ -32,7 +32,10 @@ export const persons = pgTable(
       sql`(${table.firstName} || ' ' || COALESCE(${table.lastName}, '')) gin_trgm_ops`,
     ),
     check('persons_gender_check', sql`${table.gender} IN ('male', 'female', 'other')`),
-    check('chk_alive_if_linked', sql`${table.linkedUserId} IS NULL OR ${table.isAlive} = TRUE`),
+    check(
+      'chk_alive_if_linked',
+      sql`${table.linkedUserId} IS NULL OR ${table.isAlive} = TRUE`,
+    ),
     index('idx_persons_linked_user')
       .on(table.linkedUserId)
       .where(sql`${table.linkedUserId} IS NOT NULL`),

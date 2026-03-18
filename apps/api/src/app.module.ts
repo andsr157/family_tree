@@ -6,6 +6,8 @@ import { DatabaseModule } from './db/database.module'
 import { RedisModule } from './core/redis/redis.module'
 import { AuthModule } from './core/auth/auth.module'
 import { HealthModule } from './modules/health/health.module'
+import { PersonsModule } from './modules/persons/persons.module'
+import { AuditLogsModule } from './modules/audit-logs/audit-logs.module'
 
 @Module({
   imports: [
@@ -20,8 +22,10 @@ import { HealthModule } from './modules/health/health.module'
     ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
+    AuditLogsModule,
     AuthModule,
     HealthModule,
+    PersonsModule,
   ],
 })
 export class AppModule {}
