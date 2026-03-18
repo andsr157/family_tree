@@ -1,31 +1,29 @@
 FROM node:22-alpine AS builder
 WORKDIR /src
+ENV NODE_ENV=development
 
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
 # Build from monorepo context
 COPY . .
-RUN pnpm install --frozen-lockfile
-RUN pnpm build:packages
+RUN test -f /src/package.json && test -d /src/apps/api || (echo "ERROR: Docker build context must be repo root" && exit 1)
+RUN pnpm install --frozen-lockfile --prod=false
 RUN pnpm --filter api build
+# Create production node_modules for api
+RUN pnpm --filter api deploy --prod /out/api
 
 FROM node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Runtime deps and build artifacts only (no app source code)
-COPY --from=builder /src/node_modules ./node_modules
-COPY --from=builder /src/apps/api/package.json ./apps/api/package.json
-COPY --from=builder /src/apps/api/dist ./apps/api/dist
-COPY --from=builder /src/packages/schemas/package.json ./packages/schemas/package.json
-COPY --from=builder /src/packages/schemas/dist ./packages/schemas/dist
-COPY --from=builder /src/packages/types/package.json ./packages/types/package.json
-COPY --from=builder /src/packages/types/dist ./packages/types/dist
+# Minimal runtime artifacts only
+COPY --from=builder /out/api/node_modules ./node_modules
+COPY --from=builder /src/apps/api/dist ./dist
 
-# Compatibility for platforms that force an absolute /src/* start path
-RUN ln -s /app /src
+# Compatibility path if platform tries /src/apps/api/dist/src/main.js
+RUN mkdir -p /src/apps && ln -s /app /src/apps/api
 
-WORKDIR /app/apps/api
+RUN test -f /app/dist/src/main.js || (echo "ERROR: /app/dist/src/main.js missing in final image" && ls -la /app/dist && exit 1)
 
-CMD ["node", "dist/main"]
+CMD ["node", "/app/dist/src/main.js"]
