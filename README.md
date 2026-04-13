@@ -9,34 +9,71 @@ Monorepo project for a family tree application.
 - **ORM**: Drizzle ORM
 - **Database**: PostgreSQL 16
 - **Cache**: Redis 7
-- **File Storage**: S3-compatible (MinIO lokal, Cloudflare R2 / AWS S3 production)
 - **Hosting**: [Zeabur](https://zeabur.com)
 
-## Local Development
+---
+
+## 🚀 Development Guide
+
+### 1. Prerequisites
+
+- Node.js >= 22
+- pnpm >= 9
+- PostgreSQL 16+ (local, atau gunakan Docker)
+- Redis 7+ (local, atau gunakan Docker)
+
+### 2. Clone & Install
 
 ```bash
-# Install dependencies
 pnpm install
+```
 
-# Siapkan env apps/api/.env sesuai service database, redis, dan storage yang Anda pakai
+### 3. Setup Environment Variables
 
-# Run all apps
+Buat file `.env` di `apps/api/` dan `apps/web/` jika perlu.
+
+Contoh `.env` untuk backend (`apps/api/.env`):
+
+```
+DATABASE_URL=postgresql://user:password@localhost:5432/family_tree
+REDIS_URL=redis://localhost:6379
+```
+
+Contoh `.env` untuk frontend (`apps/web/.env`):
+
+```
+VITE_API_URL=http://localhost:3000
+```
+
+### 4. Jalankan Service Lokal
+
+```bash
 pnpm dev
 ```
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:3000/api/v1
+Ini akan menjalankan frontend & backend secara paralel.
 
-## Deploy ke Zeabur
+### 5. Database Migration & Seed
 
-1. Push repo ke GitHub
-2. Buka [Zeabur Dashboard](https://dash.zeabur.com) → New Project
-3. Import repo → Zeabur akan auto-detect 2 services: **web** dan **api**
-4. Tambahkan managed services di project:
-   - **PostgreSQL** → `DATABASE_URL` otomatis ter-link
-   - **Redis** → `REDIS_URL` otomatis ter-link
-5. Set environment variables di service **api**:
-   - `BETTER_AUTH_SECRET`, `FRONTEND_URL`, `S3_*`, `SMTP_*`
-6. Set custom domain untuk **web** dan **api**
+- Push schema: `pnpm db:push`
+- Migrasi: `pnpm db:migrate`
+- Seed: `pnpm db:seed`
 
-Konfigurasi deployment ada di `zeabur.yaml`.
+---
+
+## 🛰️ Deployment (Staging/Production)
+
+Deploy dilakukan otomatis via GitHub Actions ke [Zeabur](https://zeabur.com). File `zeabur.yaml` hanya berlaku untuk Zeabur dan tidak digunakan saat development lokal.
+
+Jika ingin deploy manual di server sendiri, pastikan semua service (PostgreSQL, Redis, dsb) sudah tersedia dan environment variable sudah di-setup sesuai kebutuhan.
+
+---
+
+## 📦 Struktur Monorepo
+
+- `apps/web` — Frontend (Vue 3)
+- `apps/api` — Backend (NestJS)
+- `packages/schemas` — Shared Zod schemas
+- `packages/types` — Shared TypeScript types
+
+---
