@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Body, Res, Req, HttpCode, HttpStatus } from '@nestjs/common'
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Res,
+  Req,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common'
 import type { Response, Request } from 'express'
 import { AuthService } from './auth.service'
 import { Public } from './decorators/public.decorator'

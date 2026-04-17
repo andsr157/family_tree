@@ -1,0 +1,2 @@
+ALTER TABLE "persons" DROP CONSTRAINT "persons_gender_check";--> statement-breakpoint
+ALTER TABLE "persons" ADD CONSTRAINT "persons_gender_check" CHECK ("persons"."gender" IN ('male', 'female', 'other', 'unknown'));

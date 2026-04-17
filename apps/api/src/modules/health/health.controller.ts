@@ -1,9 +1,9 @@
 import { Controller, Get, Inject } from '@nestjs/common'
 import { sql } from 'drizzle-orm'
 import { Redis } from 'ioredis'
-import { DATABASE } from '../../db/database.module'
-import { REDIS } from '../../core/redis/redis.constants'
-import { Public } from '../../core/auth/decorators/public.decorator'
+import { DATABASE, type DatabaseClient } from '@/db/database.module'
+import { REDIS } from '@/core/redis/redis.constants'
+import { Public } from '@/core/auth/decorators/public.decorator'
 
 interface HealthResult {
   status: 'ok' | 'degraded'
@@ -16,7 +16,7 @@ interface HealthResult {
 @Controller('health')
 export class HealthController {
   constructor(
-    @Inject(DATABASE) private readonly db: any,
+    @Inject(DATABASE) private readonly db: DatabaseClient,
     @Inject(REDIS) private readonly redis: Redis,
   ) {}
 
