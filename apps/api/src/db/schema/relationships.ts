@@ -9,7 +9,7 @@ import {
   uniqueIndex,
   check,
 } from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
+import { sql, relations } from 'drizzle-orm'
 import { tenants } from './tenants'
 import { persons } from './persons'
 import { metadataFields } from './helpers'
@@ -54,3 +54,15 @@ export const relationships = pgTable(
     check('rel_no_self_check', sql`${table.person1Id} <> ${table.person2Id}`),
   ],
 )
+
+export const relationshipsRelations = relations(relationships, ({ one }) => ({
+  person1: one(persons, {
+    fields: [relationships.person1Id],
+    references: [persons.id],
+  }),
+
+  person2: one(persons, {
+    fields: [relationships.person2Id],
+    references: [persons.id],
+  }),
+}))

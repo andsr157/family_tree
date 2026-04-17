@@ -1,10 +1,11 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common'
 import { PersonsRepository } from './persons.repository'
-import { AuditLogsRepository } from '../audit-logs/audit-logs.repository'
+import { AuditLogsRepository } from '@/modules/audit-logs/audit-logs.repository'
 import type { ServiceContext } from '@/common/types'
 import type { CreatePersonDto } from './dto/create-person.dto'
 import type { UpdatePersonDto } from './dto/update-person.dto'
 import type { QueryPersonDto } from './dto/query-person.dto'
+import type { PersonOrderByField } from './persons.repository'
 
 @Injectable()
 export class PersonsService {
@@ -24,14 +25,11 @@ export class PersonsService {
       isAlive,
     }
 
-    const sortMap: Record<
-      string,
-      { field: 'firstName' | 'createdAt'; dir: 'asc' | 'desc' }
-    > = {
+    const sortMap: Record<string, { field: PersonOrderByField; dir: 'asc' | 'desc' }> = {
       firstName_asc: { field: 'firstName', dir: 'asc' },
       firstName_desc: { field: 'firstName', dir: 'desc' },
-      createdAt_asc: { field: 'createdAt', dir: 'asc' },
-      createdAt_desc: { field: 'createdAt', dir: 'desc' },
+      lastName_asc: { field: 'lastName', dir: 'asc' },
+      lastName_desc: { field: 'lastName', dir: 'desc' },
     }
     const orderBy = sortMap[sort] ?? sortMap['firstName_asc']
 

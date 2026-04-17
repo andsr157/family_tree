@@ -14,9 +14,9 @@ import { PersonsService } from './persons.service'
 import { ZodValidationPipe } from '@/common/pipes/zod-validation.pipe'
 import { Roles } from '@/core/auth/decorators/roles.decorator'
 import { Ctx } from '@/common/decorator/ctx.decorator'
-import { CreatePersonDto, createPersonSchema } from './dto/create-person.dto'
-import { UpdatePersonDto, updatePersonSchema } from './dto/update-person.dto'
-import { QueryPersonDto, queryPersonSchema } from './dto/query-person.dto'
+import { createPersonSchema, type CreatePersonDto } from './dto/create-person.dto'
+import { updatePersonSchema, type UpdatePersonDto } from './dto/update-person.dto'
+import { queryPersonSchema, type QueryPersonDto } from './dto/query-person.dto'
 import type { ServiceContext } from '@/common/types'
 
 @Controller('persons')

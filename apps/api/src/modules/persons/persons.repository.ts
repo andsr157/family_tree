@@ -16,10 +16,12 @@ export interface PersonFilters {
   isAlive?: boolean
 }
 
+export type PersonOrderByField = 'firstName' | 'lastName'
+
 export interface PersonQueryOptions {
   limit: number
   offset: number
-  orderByField: 'firstName' | 'createdAt'
+  orderByField: PersonOrderByField
   orderByDir: 'asc' | 'desc'
 }
 
@@ -32,49 +34,37 @@ export class PersonsRepository {
   }
 
   async findMany(filters: PersonFilters, options: PersonQueryOptions) {
-    const conditions = this.buildConditions(filters)
-
-    const orderByFn =
+    const orderBy =
       options.orderByDir === 'asc'
         ? asc(persons[options.orderByField])
         : desc(persons[options.orderByField])
 
     return this.db.query.persons.findMany({
-      where: and(...conditions),
+      where: this.buildWhere(filters),
       limit: options.limit,
       offset: options.offset,
-      orderBy: orderByFn,
+      orderBy,
     })
   }
 
   async count(filters: PersonFilters) {
-    const conditions = this.buildConditions(filters)
-
     const result = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(persons)
-      .where(and(...conditions))
+      .where(this.buildWhere(filters))
 
     return result[0]?.count ?? 0
   }
 
   async findById(tenantId: string, personId: string) {
     return this.db.query.persons.findFirst({
-      where: and(
-        eq(persons.id, personId),
-        eq(persons.tenantId, tenantId),
-        isNull(persons.deletedAt),
-      ),
+      where: this.buildWhere({ tenantId }, eq(persons.id, personId)),
     })
   }
 
   async findByLinkedUserId(userId: string, tenantId: string) {
     return this.db.query.persons.findFirst({
-      where: and(
-        eq(persons.linkedUserId, userId),
-        eq(persons.tenantId, tenantId),
-        isNull(persons.deletedAt),
-      ),
+      where: this.buildWhere({ tenantId }, eq(persons.linkedUserId, userId)),
     })
   }
 
@@ -86,7 +76,7 @@ export class PersonsRepository {
     },
     tx?: DatabaseTx,
   ) {
-    const client = tx ?? this.db
+    const client = this.getClient(tx)
     const [person] = await client
       .insert(persons)
       .values({
@@ -106,20 +96,14 @@ export class PersonsRepository {
     },
     tx?: DatabaseTx,
   ) {
-    const client = tx ?? this.db
+    const client = this.getClient(tx)
     const [person] = await client
       .update(persons)
       .set({
         ...data,
         updatedAt: new Date(),
       })
-      .where(
-        and(
-          eq(persons.id, id),
-          eq(persons.tenantId, tenantId),
-          isNull(persons.deletedAt),
-        ),
-      )
+      .where(this.buildWhere({ tenantId }, eq(persons.id, id)))
       .returning()
     return person
   }
@@ -130,7 +114,7 @@ export class PersonsRepository {
     deletedBy: string,
     tx?: DatabaseTx,
   ) {
-    const client = tx ?? this.db
+    const client = this.getClient(tx)
     const [person] = await client
       .update(persons)
       .set({
@@ -139,24 +123,26 @@ export class PersonsRepository {
         updatedAt: new Date(),
         updatedBy: deletedBy,
       })
-      .where(
-        and(
-          eq(persons.id, personId),
-          eq(persons.tenantId, tenantId),
-          isNull(persons.deletedAt),
-        ),
-      )
+      .where(this.buildWhere({ tenantId }, eq(persons.id, personId)))
       .returning()
     return person
   }
 
-  private buildConditions(filters: PersonFilters) {
-    const conditions: SQL[] = [
-      eq(persons.tenantId, filters.tenantId),
-      isNull(persons.deletedAt),
-    ]
+  private getClient(tx?: DatabaseTx) {
+    return tx ?? this.db
+  }
 
-    if (filters.search) {
+  private buildWhere(
+    filters: Pick<PersonFilters, 'tenantId'>,
+    ...extraConditions: SQL[]
+  ) {
+    return and(...this.buildConditions(filters), ...extraConditions)
+  }
+
+  private buildConditions(filters: PersonFilters | Pick<PersonFilters, 'tenantId'>) {
+    const conditions: SQL[] = this.buildScopeConditions(filters.tenantId)
+
+    if ('search' in filters && filters.search) {
       conditions.push(
         or(
           like(persons.firstName, `%${filters.search}%`),
@@ -166,9 +152,14 @@ export class PersonsRepository {
       )
     }
 
-    if (filters.isAlive !== undefined) {
+    if ('isAlive' in filters && filters.isAlive !== undefined) {
       conditions.push(eq(persons.isAlive, filters.isAlive))
     }
+
     return conditions
+  }
+
+  private buildScopeConditions(tenantId: string): SQL[] {
+    return [eq(persons.tenantId, tenantId), isNull(persons.deletedAt)]
   }
 }
