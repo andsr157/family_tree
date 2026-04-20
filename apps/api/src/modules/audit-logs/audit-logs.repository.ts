@@ -22,8 +22,6 @@ export class AuditLogsRepository {
       action: AuditAction
       entityType: EntityType
       entityId: string
-      oldData: Record<string, unknown> | null
-      newData: Record<string, unknown> | null
       ipAddress?: string
     },
     tx?: DatabaseTx,
@@ -37,8 +35,6 @@ export class AuditLogsRepository {
         action: data.action,
         entityType: data.entityType,
         entityId: data.entityId,
-        oldData: data.oldData,
-        newData: data.newData,
         ipAddress: data.ipAddress,
       })
       .returning()

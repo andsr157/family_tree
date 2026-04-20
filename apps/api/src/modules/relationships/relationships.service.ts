@@ -95,8 +95,6 @@ export class RelationshipsService {
           action: 'CREATE',
           entityType: 'relationship',
           entityId: relationship.id,
-          oldData: null,
-          newData: relationship,
         },
         tx,
       )
@@ -144,8 +142,6 @@ export class RelationshipsService {
           action: 'UPDATE',
           entityType: 'relationship',
           entityId: id,
-          oldData: existing,
-          newData: updated,
         },
         tx,
       )
@@ -160,6 +156,10 @@ export class RelationshipsService {
       ctx.tenantId,
       'Relationship not found',
     )
+
+    if (!existing) {
+      throw new NotFoundException('Relationship not found')
+    }
 
     return this.relationshipsRepo.withTransaction(async (tx) => {
       const deleted = await this.relationshipsRepo.softDelete(
@@ -176,8 +176,6 @@ export class RelationshipsService {
           action: 'DELETE',
           entityType: 'relationship',
           entityId: id,
-          oldData: existing,
-          newData: null,
         },
         tx,
       )

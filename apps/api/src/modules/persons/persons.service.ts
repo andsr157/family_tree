@@ -89,8 +89,6 @@ export class PersonsService {
           action: 'CREATE',
           entityType: 'person',
           entityId: person.id,
-          oldData: null,
-          newData: person,
         },
         tx,
       )
@@ -137,8 +135,6 @@ export class PersonsService {
           action: 'UPDATE',
           entityType: 'person',
           entityId: id,
-          oldData: existing,
-          newData: updated,
         },
         tx,
       )
@@ -170,8 +166,6 @@ export class PersonsService {
           action: 'DELETE',
           entityType: 'person',
           entityId: id,
-          oldData: existing,
-          newData: null,
         },
         tx,
       )

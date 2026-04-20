@@ -1,7 +1,9 @@
 import { uuid, varchar, boolean, text, pgTable, check, index } from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
+import { sql, relations } from 'drizzle-orm'
 import { tenants } from './tenants'
 import { users } from './users'
+import { events } from './events'
+import { relationships } from './relationships'
 import { metadataFields } from './helpers'
 
 export const persons = pgTable(
@@ -31,10 +33,7 @@ export const persons = pgTable(
       'gin',
       sql`(${table.firstName} || ' ' || COALESCE(${table.lastName}, '')) gin_trgm_ops`,
     ),
-    check(
-      'persons_gender_check',
-      sql`${table.gender} IN ('male', 'female', 'other', 'unknown')`,
-    ),
+    check('persons_gender_check', sql`${table.gender} IN ('male', 'female', 'other')`),
     check(
       'chk_alive_if_linked',
       sql`${table.linkedUserId} IS NULL OR ${table.isAlive} = TRUE`,
@@ -44,3 +43,13 @@ export const persons = pgTable(
       .where(sql`${table.linkedUserId} IS NOT NULL`),
   ],
 )
+
+export const personsRelations = relations(persons, ({ many }) => ({
+  events: many(events),
+  relationshipsAsPerson1: many(relationships, {
+    relationName: 'person1',
+  }),
+  relationshipsAsPerson2: many(relationships, {
+    relationName: 'person2',
+  }),
+}))

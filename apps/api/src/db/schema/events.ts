@@ -8,7 +8,7 @@ import {
   index,
   check,
 } from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
+import { sql, relations } from 'drizzle-orm'
 import { tenants } from './tenants'
 import { persons } from './persons'
 import { relationships } from './relationships'
@@ -40,6 +40,7 @@ export const events = pgTable(
   (table) => [
     index('idx_events_person').on(table.personId),
     index('idx_events_type').on(table.type),
+    index('idx_events_tenant').on(table.tenantId),
     check(
       'events_type_check',
       sql`${table.type} IN ('birth','death','marriage','divorce','residence','education','occupation','religion','baptism','burial','other')`,
@@ -50,3 +51,14 @@ export const events = pgTable(
     ),
   ],
 )
+
+export const eventsRelations = relations(events, ({ one }) => ({
+  person: one(persons, {
+    fields: [events.personId],
+    references: [persons.id],
+  }),
+  relationship: one(relationships, {
+    fields: [events.relationshipId],
+    references: [relationships.id],
+  }),
+}))

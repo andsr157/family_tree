@@ -8,6 +8,7 @@ import { AuthModule } from './core/auth/auth.module'
 import { HealthModule } from './modules/health/health.module'
 import { PersonsModule } from './modules/persons/persons.module'
 import { RelationshipsModule } from './modules/relationships/relationships.module'
+import { EventsModule } from './modules/events/event.module'
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module'
 
 @Module({
@@ -28,6 +29,7 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module'
     HealthModule,
     PersonsModule,
     RelationshipsModule,
+    EventsModule,
   ],
 })
 export class AppModule {}

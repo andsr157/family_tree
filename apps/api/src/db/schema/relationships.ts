@@ -12,6 +12,7 @@ import {
 import { sql, relations } from 'drizzle-orm'
 import { tenants } from './tenants'
 import { persons } from './persons'
+import { events } from './events'
 import { metadataFields } from './helpers'
 
 export const relationships = pgTable(
@@ -55,14 +56,16 @@ export const relationships = pgTable(
   ],
 )
 
-export const relationshipsRelations = relations(relationships, ({ one }) => ({
+export const relationshipsRelations = relations(relationships, ({ one, many }) => ({
   person1: one(persons, {
     fields: [relationships.person1Id],
     references: [persons.id],
+    relationName: 'person1',
   }),
-
   person2: one(persons, {
     fields: [relationships.person2Id],
     references: [persons.id],
+    relationName: 'person2',
   }),
+  events: many(events),
 }))

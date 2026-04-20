@@ -27,8 +27,8 @@ export const auditLogs = pgTable(
       >(),
 
     entityId: uuid().notNull(),
-    oldData: jsonb().$type<Record<string, unknown> | null>(),
-    newData: jsonb().$type<Record<string, unknown> | null>(),
+    // oldData: jsonb().$type<Record<string, unknown> | null>(),
+    // newData: jsonb().$type<Record<string, unknown> | null>(),
     ipAddress: inet(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },

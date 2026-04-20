@@ -36,6 +36,20 @@
       "when": 1776411439555,
       "tag": "0004_parallel_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776658643141,
+      "tag": "0005_abandoned_firedrake",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776659034572,
+      "tag": "0006_spicy_jazinda",
+      "breakpoints": true
     }
   ]
 }
