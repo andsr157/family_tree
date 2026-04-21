@@ -9,6 +9,8 @@ import { HealthModule } from './modules/health/health.module'
 import { PersonsModule } from './modules/persons/persons.module'
 import { RelationshipsModule } from './modules/relationships/relationships.module'
 import { EventsModule } from './modules/events/event.module'
+import { CitationsModule } from './modules/citations/citations.modules'
+import { SourcesModule } from './modules/sources/sources.module'
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module'
 
 @Module({
@@ -30,6 +32,8 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module'
     PersonsModule,
     RelationshipsModule,
     EventsModule,
+    CitationsModule,
+    SourcesModule,
   ],
 })
 export class AppModule {}

@@ -1,12 +1,4 @@
-import {
-  pgTable,
-  uuid,
-  varchar,
-  jsonb,
-  inet,
-  timestamp,
-  index,
-} from 'drizzle-orm/pg-core'
+import { pgTable, uuid, varchar, inet, timestamp, index } from 'drizzle-orm/pg-core'
 
 export const auditLogs = pgTable(
   'audit_logs',
@@ -24,11 +16,11 @@ export const auditLogs = pgTable(
         | 'family_tree'
         | 'tree_collaborator'
         | 'tenant_member'
+        | 'citation'
+        | 'sources'
       >(),
 
     entityId: uuid().notNull(),
-    // oldData: jsonb().$type<Record<string, unknown> | null>(),
-    // newData: jsonb().$type<Record<string, unknown> | null>(),
     ipAddress: inet(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },

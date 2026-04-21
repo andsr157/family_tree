@@ -10,6 +10,8 @@ type EntityType =
   | 'family_tree'
   | 'tree_collaborator'
   | 'tenant_member'
+  | 'citation'
+  | 'sources'
 
 @Injectable()
 export class AuditLogsRepository {
