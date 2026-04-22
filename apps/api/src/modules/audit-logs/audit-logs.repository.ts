@@ -1,18 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { DATABASE, type DatabaseClient, type DatabaseTx } from '@/db/database.module'
 import { auditLogs } from '@/db/schema'
-
-type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE'
-type EntityType =
-  | 'person'
-  | 'relationship'
-  | 'event'
-  | 'family_tree'
-  | 'tree_collaborator'
-  | 'tenant_member'
-  | 'citation'
-  | 'sources'
-
+import type { AuditActionType, AuditEntityType } from './audit-logs.type'
 @Injectable()
 export class AuditLogsRepository {
   constructor(@Inject(DATABASE) private db: DatabaseClient) {}
@@ -21,8 +10,8 @@ export class AuditLogsRepository {
     data: {
       tenantId: string
       userId: string
-      action: AuditAction
-      entityType: EntityType
+      action: AuditActionType
+      entityType: AuditEntityType
       entityId: string
       ipAddress?: string
     },

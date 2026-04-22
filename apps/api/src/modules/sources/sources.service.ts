@@ -5,6 +5,7 @@ import type { ServiceContext } from '@/common/types'
 import type { CreateSourceDto } from './dto/create-source.dto'
 import type { UpdateSourceDto } from './dto/update-source.dto'
 import type { QuerySourceDto } from './dto/query-source.dto'
+import type { PaginatedResponse } from '@/common/types'
 
 @Injectable()
 export class SourcesService {
@@ -13,7 +14,12 @@ export class SourcesService {
     private auditLogsRepo: AuditLogsRepository,
   ) {}
 
-  async findAll(ctx: ServiceContext, query: QuerySourceDto) {
+  async findAll(
+    ctx: ServiceContext,
+    query: QuerySourceDto,
+  ): Promise<
+    PaginatedResponse<Awaited<ReturnType<SourcesRepository['findMany']>>[number]>
+  > {
     const filters = {
       tenantId: ctx.tenantId,
       q: query.q,

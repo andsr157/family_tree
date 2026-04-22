@@ -1,5 +1,5 @@
-import type { TenantRole } from '@family-tree/types'
-export type { TenantRole }
+import type { TenantRole, PaginatedResponse } from '@family-tree/types'
+export type { TenantRole, PaginatedResponse }
 
 export interface ServiceContext {
   tenantId: string

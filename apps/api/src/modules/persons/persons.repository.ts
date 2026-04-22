@@ -109,8 +109,8 @@ export class PersonsRepository {
   }
 
   async softDelete(
-    tenantId: string,
     personId: string,
+    tenantId: string,
     deletedBy: string,
     tx?: DatabaseTx,
   ) {

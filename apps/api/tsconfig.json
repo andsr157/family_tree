@@ -14,7 +14,9 @@
       "@/*": ["src/*"],
       "@family-tree/schemas": ["../../packages/schemas/dist/index.d.ts"],
       "@family-tree/types": ["../../packages/types/dist/index.d.ts"]
-    }
+      
+    },
+    // "ignoreDeprecations": "6.0"
   },
   "include": ["src", "drizzle.config.ts"]
 }

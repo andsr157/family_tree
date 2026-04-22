@@ -6,6 +6,7 @@ import type { CreatePersonDto } from './dto/create-person.dto'
 import type { UpdatePersonDto } from './dto/update-person.dto'
 import type { QueryPersonDto } from './dto/query-person.dto'
 import type { PersonOrderByField } from './persons.repository'
+import type { PaginatedResponse } from '@/common/types'
 
 @Injectable()
 export class PersonsService {
@@ -14,7 +15,10 @@ export class PersonsService {
     private auditLogsRepo: AuditLogsRepository,
   ) {}
 
-  async findAll(ctx: ServiceContext, query: QueryPersonDto) {
+  async findAll(
+    ctx: ServiceContext,
+    query: QueryPersonDto,
+  ): Promise<PaginatedResponse<Awaited<ReturnType<PersonsRepository['findById']>>>> {
     const { q, page, pageSize, isAlive, sort } = query
 
     const offset = pageSize * (page - 1)
@@ -56,13 +60,7 @@ export class PersonsService {
   }
 
   async findById(id: string, ctx: ServiceContext) {
-    const person = await this.personsRepo.findById(ctx.tenantId, id)
-
-    if (!person) {
-      throw new NotFoundException('Person not found')
-    }
-
-    return person
+    return this.findPersonOrThrow(id, ctx.tenantId)
   }
 
   async create(dto: CreatePersonDto, ctx: ServiceContext) {
@@ -98,11 +96,7 @@ export class PersonsService {
   }
 
   async update(id: string, dto: UpdatePersonDto, ctx: ServiceContext) {
-    // Ensure the person exists.
-    const existing = await this.personsRepo.findById(ctx.tenantId, id)
-    if (!existing) {
-      throw new NotFoundException('Person not found')
-    }
+    const existing = await this.findPersonOrThrow(id, ctx.tenantId)
 
     // Business rule: a deceased person cannot have a linked user.
     if (dto.isAlive === false && existing.linkedUserId) {
@@ -144,10 +138,7 @@ export class PersonsService {
   }
 
   async softDelete(id: string, ctx: ServiceContext) {
-    const existing = await this.personsRepo.findById(ctx.tenantId, id)
-    if (!existing) {
-      throw new NotFoundException('Person not found')
-    }
+    const existing = await this.findPersonOrThrow(id, ctx.tenantId)
 
     // Business rule: cannot delete a person who still has a linked_user_id
     if (existing.linkedUserId) {
@@ -172,5 +163,11 @@ export class PersonsService {
 
       return deleted
     })
+  }
+
+  private async findPersonOrThrow(id: string, tenantId: string) {
+    const person = await this.personsRepo.findById(tenantId, id)
+    if (!person) throw new NotFoundException('Person not found')
+    return person
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { and, asc, desc, eq, ilike, isNull, sql, type SQL } from 'drizzle-orm'
-import { sources } from '@/db/schema'
+import { citations, sources } from '@/db/schema'
 import { DATABASE } from '@/db/database.module'
 import type {
   DatabaseClient,
@@ -44,7 +44,7 @@ export class SourcesRepository {
       orderBy,
       with: {
         citations: {
-          where: isNull(sources.deletedAt),
+          where: isNull(citations.deletedAt),
           columns: {
             id: true,
             entityType: true,
@@ -73,7 +73,7 @@ export class SourcesRepository {
       where: this.buildWhere({ tenantId }, eq(sources.id, id)),
       with: {
         citations: {
-          where: isNull(sources.deletedAt),
+          where: isNull(citations.deletedAt),
           columns: {
             id: true,
             entityType: true,

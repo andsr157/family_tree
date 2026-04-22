@@ -151,15 +151,7 @@ export class RelationshipsService {
   }
 
   async softDelete(id: string, ctx: ServiceContext) {
-    const existing = await this.findRelationshipOrThrow(
-      id,
-      ctx.tenantId,
-      'Relationship not found',
-    )
-
-    if (!existing) {
-      throw new NotFoundException('Relationship not found')
-    }
+    await this.findRelationshipOrThrow(id, ctx.tenantId, 'Relationship not found')
 
     return this.relationshipsRepo.withTransaction(async (tx) => {
       const deleted = await this.relationshipsRepo.softDelete(

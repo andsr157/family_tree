@@ -1,25 +1,17 @@
 import { pgTable, uuid, varchar, inet, timestamp, index } from 'drizzle-orm/pg-core'
+import type {
+  AuditActionType,
+  AuditEntityType,
+} from '@/modules/audit-logs/audit-logs.type'
 
 export const auditLogs = pgTable(
   'audit_logs',
   {
     id: uuid().primaryKey().defaultRandom(),
     tenantId: uuid().notNull(),
-    userId: varchar({ length: 255 }).notNull(),
-    action: varchar({ length: 20 }).notNull().$type<'CREATE' | 'UPDATE' | 'DELETE'>(),
-    entityType: varchar({ length: 30 })
-      .notNull()
-      .$type<
-        | 'person'
-        | 'relationship'
-        | 'event'
-        | 'family_tree'
-        | 'tree_collaborator'
-        | 'tenant_member'
-        | 'citation'
-        | 'sources'
-      >(),
-
+    userId: uuid('user_id').notNull(),
+    action: varchar({ length: 20 }).notNull().$type<AuditActionType>(),
+    entityType: varchar({ length: 30 }).notNull().$type<AuditEntityType>(),
     entityId: uuid().notNull(),
     ipAddress: inet(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),

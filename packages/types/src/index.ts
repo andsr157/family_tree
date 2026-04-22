@@ -1,7 +1,5 @@
 // Shared TypeScript interfaces
 
-// ─── API Response ──────────────────────────────────────────────────────────────
-
 export interface ApiResponse<T = unknown> {
   success: boolean
   data: T | null
@@ -10,7 +8,17 @@ export interface ApiResponse<T = unknown> {
   timestamp: string
 }
 
-// ─── Auth ──────────────────────────────────────────────────────────────────────
+export interface PaginationMeta {
+  page: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+}
+
+export interface PaginatedResponse<T> {
+  items: T[]
+  pagination: PaginationMeta
+}
 
 export interface AuthUser {
   id: string

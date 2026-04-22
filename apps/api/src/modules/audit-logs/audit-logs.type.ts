@@ -1,0 +1,10 @@
+export type AuditActionType = 'CREATE' | 'UPDATE' | 'DELETE'
+export type AuditEntityType =
+  | 'person'
+  | 'relationship'
+  | 'event'
+  | 'family_tree'
+  | 'tree_collaborator'
+  | 'tenant_member'
+  | 'citation'
+  | 'sources'

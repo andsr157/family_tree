@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { ScheduleModule } from '@nestjs/schedule'
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler'
+import { APP_GUARD } from '@nestjs/core'
 import { LoggerModule } from 'nestjs-pino'
 import { DatabaseModule } from './db/database.module'
 import { RedisModule } from './core/redis/redis.module'
@@ -24,6 +26,19 @@ import { FamilyTreesModule } from './modules/trees/trees.module'
           process.env.NODE_ENV !== 'production' ? { target: 'pino-pretty' } : undefined,
       },
     }),
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60_000,
+        limit: 100,
+      },
+      {
+        name: 'auth',
+        ttl: 60_000,
+        limit: 10,
+      },
+    ]),
+
     ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
@@ -36,6 +51,12 @@ import { FamilyTreesModule } from './modules/trees/trees.module'
     SourcesModule,
     CitationsModule,
     FamilyTreesModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}

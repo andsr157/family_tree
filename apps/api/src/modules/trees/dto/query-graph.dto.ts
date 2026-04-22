@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const graphQuerySchema = z.object({
-  focalPersonId: z.string().uuid('focalPersonId must be a valid UUID'),
+  focalPersonId: z.string().uuid('focalPersonId must be a valid UUID').optional(),
   depth: z.coerce.number().int().min(1).max(5).default(2),
 })
 

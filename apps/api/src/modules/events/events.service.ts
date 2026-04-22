@@ -145,11 +145,7 @@ export class EventsService {
   }
 
   async softDelete(id: string, ctx: ServiceContext) {
-    const existing = await this.findEventOrThrow(id, ctx.tenantId)
-
-    if (!existing) {
-      throw new NotFoundException('Event not found')
-    }
+    await this.findEventOrThrow(id, ctx.tenantId)
 
     return this.eventsRepo.withTransaction(async (tx) => {
       const deleted = await this.eventsRepo.softDelete(id, ctx.tenantId, ctx.userId, tx)
