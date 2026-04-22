@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
-import { EventsController } from './event.controller'
-import { EventsService } from './event.service'
-import { EventsRepository } from './event.repository'
+import { EventsController } from './events.controller'
+import { EventsService } from './events.service'
+import { EventsRepository } from './events.repository'
 import { PersonsModule } from '@/modules/persons/persons.module'
 import { RelationshipsModule } from '@/modules/relationships/relationships.module'
 

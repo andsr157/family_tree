@@ -7,7 +7,7 @@ import {
 import { CitationsRepository } from './citations.repository'
 import { SourcesRepository } from '@/modules/sources/sources.repository'
 import { PersonsRepository } from '@/modules/persons/persons.repository'
-import { EventsRepository } from '@/modules/events/event.repository'
+import { EventsRepository } from '@/modules/events/events.repository'
 import { RelationshipsRepository } from '@/modules/relationships/relationships.repository'
 import { AuditLogsRepository } from '@/modules/audit-logs/audit-logs.repository'
 import type { ServiceContext } from '@/common/types'

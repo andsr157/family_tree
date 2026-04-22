@@ -4,10 +4,10 @@ import {
   BadRequestException,
   ConflictException,
 } from '@nestjs/common'
-import { EventsRepository } from './event.repository'
+import { EventsRepository } from './events.repository'
 import { PersonsRepository } from '../persons/persons.repository'
-import { RelationshipsRepository } from '../relationships/relationships.repository'
-import { AuditLogsRepository } from '../audit-logs/audit-logs.repository'
+import { RelationshipsRepository } from '@/modules/relationships/relationships.repository'
+import { AuditLogsRepository } from '@/modules/audit-logs/audit-logs.repository'
 import type { ServiceContext } from '@/common/types'
 import type { CreateEventDto } from './dto/create-event.dto'
 import type { UpdateEventDto } from './dto/update-event.dto'

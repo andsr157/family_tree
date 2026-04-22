@@ -8,10 +8,11 @@ import { AuthModule } from './core/auth/auth.module'
 import { HealthModule } from './modules/health/health.module'
 import { PersonsModule } from './modules/persons/persons.module'
 import { RelationshipsModule } from './modules/relationships/relationships.module'
-import { EventsModule } from './modules/events/event.module'
-import { CitationsModule } from './modules/citations/citations.modules'
+import { EventsModule } from './modules/events/events.module'
+import { CitationsModule } from './modules/citations/citations.module'
 import { SourcesModule } from './modules/sources/sources.module'
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module'
+import { FamilyTreesModule } from './modules/trees/trees.module'
 
 @Module({
   imports: [
@@ -32,8 +33,9 @@ import { AuditLogsModule } from './modules/audit-logs/audit-logs.module'
     PersonsModule,
     RelationshipsModule,
     EventsModule,
-    CitationsModule,
     SourcesModule,
+    CitationsModule,
+    FamilyTreesModule,
   ],
 })
 export class AppModule {}

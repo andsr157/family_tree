@@ -6,7 +6,7 @@ import {
   uniqueIndex,
   check,
 } from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
+import { sql, relations } from 'drizzle-orm'
 import { familyTrees } from './family_trees'
 import { users } from './users'
 import { metadataFields } from './helpers'
@@ -35,3 +35,20 @@ export const treeCollaborators = pgTable(
     ),
   ],
 )
+
+export const treeCollaboratorsRelations = relations(treeCollaborators, ({ one }) => ({
+  tree: one(familyTrees, {
+    fields: [treeCollaborators.treeId],
+    references: [familyTrees.id],
+  }),
+  user: one(users, {
+    fields: [treeCollaborators.userId],
+    references: [users.id],
+    relationName: 'collaboratorUser',
+  }),
+  inviter: one(users, {
+    fields: [treeCollaborators.invitedBy],
+    references: [users.id],
+    relationName: 'inviterUser',
+  }),
+}))

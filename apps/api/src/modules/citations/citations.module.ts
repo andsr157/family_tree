@@ -4,7 +4,7 @@ import { CitationsService } from './citations.service'
 import { CitationsRepository } from './citations.repository'
 import { SourcesModule } from '../sources/sources.module'
 import { PersonsModule } from '@/modules/persons/persons.module'
-import { EventsModule } from '@/modules/events/event.module'
+import { EventsModule } from '@/modules/events/events.module'
 import { RelationshipsModule } from '@/modules/relationships/relationships.module'
 
 @Module({

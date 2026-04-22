@@ -1,7 +1,8 @@
 import { pgTable, uuid, varchar, text, jsonb, check } from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
+import { sql, relations } from 'drizzle-orm'
 import { tenants } from './tenants'
 import { persons } from './persons'
+import { treeCollaborators } from './tree_collaborators'
 import { metadataFields } from './helpers'
 
 export const familyTrees = pgTable(
@@ -17,6 +18,7 @@ export const familyTrees = pgTable(
       .notNull()
       .references(() => persons.id),
     visibility: varchar('visibility', { length: 20 }).notNull().default('private'),
+    // settings stores: { nodePositions: { [personId]: { x, y } }, ...other prefs }
     settings: jsonb('settings').$type<Record<string, unknown>>().notNull().default({}),
     defaultFocalPersonId: uuid('default_focal_person_id').references(() => persons.id, {
       onDelete: 'set null',
@@ -30,3 +32,17 @@ export const familyTrees = pgTable(
     ),
   ],
 )
+
+export const familyTreesRelations = relations(familyTrees, ({ one, many }) => ({
+  rootPerson: one(persons, {
+    fields: [familyTrees.rootPersonId],
+    references: [persons.id],
+    relationName: 'rootPerson',
+  }),
+  defaultFocalPerson: one(persons, {
+    fields: [familyTrees.defaultFocalPersonId],
+    references: [persons.id],
+    relationName: 'defaultFocalPerson',
+  }),
+  collaborators: many(treeCollaborators),
+}))

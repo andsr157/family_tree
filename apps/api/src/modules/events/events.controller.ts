@@ -10,7 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common'
-import { EventsService } from './event.service'
+import { EventsService } from './events.service'
 import { ZodValidationPipe } from '@/common/pipes/zod-validation.pipe'
 import { Roles } from '@/core/auth/decorators/roles.decorator'
 import { Ctx } from '@/common/decorator/ctx.decorator'
