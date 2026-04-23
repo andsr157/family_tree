@@ -1,20 +1,15 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { and, eq, isNull } from 'drizzle-orm'
-import { treeCollaborators } from '@/db/schema'
+import { BaseRepository } from '@/common/base/base.repository'
 import { DATABASE } from '@/db/database.module'
-import type {
-  DatabaseClient,
-  DatabaseTx,
-  TransactionCallback,
-} from '@/db/database.module'
+import type { DatabaseClient, DatabaseTx } from '@/db/database.module'
+import { treeCollaborators } from '@/db/schema'
 import type { CollaboratorRole } from './dto/collaborator.dto'
 
 @Injectable()
-export class TreeCollaboratorsRepository {
-  constructor(@Inject(DATABASE) private db: DatabaseClient) {}
-
-  async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
-    return this.db.transaction(callback)
+export class TreeCollaboratorsRepository extends BaseRepository {
+  constructor(@Inject(DATABASE) protected override readonly db: DatabaseClient) {
+    super(db)
   }
 
   async findByTree(treeId: string) {
@@ -77,7 +72,7 @@ export class TreeCollaboratorsRepository {
         role: data.role,
         invitedBy: data.invitedBy,
         invitedAt: new Date(),
-        acceptedAt: new Date(), // auto-accept for now; invitation flow can be added later
+        acceptedAt: new Date(),
         createdBy: data.invitedBy,
       })
       .returning()
@@ -125,9 +120,5 @@ export class TreeCollaboratorsRepository {
       )
       .returning()
     return collab
-  }
-
-  private getClient(tx?: DatabaseTx) {
-    return tx ?? this.db
   }
 }

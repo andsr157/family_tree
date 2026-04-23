@@ -1,12 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common'
-import { and, eq, isNull, type SQL } from 'drizzle-orm'
-import { events } from '@/db/schema'
+import { and, eq, type SQL } from 'drizzle-orm'
+import { BaseRepository } from '@/common/base/base.repository'
 import { DATABASE } from '@/db/database.module'
-import type {
-  DatabaseClient,
-  DatabaseTx,
-  TransactionCallback,
-} from '@/db/database.module'
+import type { DatabaseClient, DatabaseTx } from '@/db/database.module'
+import { events } from '@/db/schema'
 import type { CreateEventDto } from './dto/create-event.dto'
 import type { UpdateEventDto } from './dto/update-event.dto'
 
@@ -17,11 +14,9 @@ export interface EventFilters {
 }
 
 @Injectable()
-export class EventsRepository {
-  constructor(@Inject(DATABASE) private db: DatabaseClient) {}
-
-  async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
-    return this.db.transaction(callback)
+export class EventsRepository extends BaseRepository {
+  constructor(@Inject(DATABASE) protected override readonly db: DatabaseClient) {
+    super(db)
   }
 
   async findManyByPerson(filters: EventFilters) {
@@ -105,10 +100,6 @@ export class EventsRepository {
     return event
   }
 
-  private getClient(tx?: DatabaseTx) {
-    return tx ?? this.db
-  }
-
   private buildWhere(
     filters: Pick<EventFilters, 'tenantId'> | EventFilters,
     ...extraConditions: SQL[]
@@ -117,7 +108,11 @@ export class EventsRepository {
   }
 
   private buildConditions(filters: Pick<EventFilters, 'tenantId'> | EventFilters) {
-    const conditions: SQL[] = this.buildScopeConditions(filters.tenantId)
+    const conditions: SQL[] = this.buildScopeConditions(
+      events.tenantId,
+      events.deletedAt,
+      filters.tenantId,
+    )
 
     if ('personId' in filters && filters.personId) {
       conditions.push(eq(events.personId, filters.personId))
@@ -128,9 +123,5 @@ export class EventsRepository {
     }
 
     return conditions
-  }
-
-  private buildScopeConditions(tenantId: string): SQL[] {
-    return [eq(events.tenantId, tenantId), isNull(events.deletedAt)]
   }
 }

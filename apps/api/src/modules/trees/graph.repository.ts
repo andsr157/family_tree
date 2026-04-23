@@ -1,7 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
-import { sql } from 'drizzle-orm'
+import { and, eq, isNull, inArray, notInArray, sql } from 'drizzle-orm'
 import { DATABASE } from '@/db/database.module'
 import type { DatabaseClient } from '@/db/database.module'
+import { relationships } from '@/db/schema'
 import type { GraphNode, GraphEdge, GraphResponse } from './dto/query-graph.dto'
 
 interface RawPersonRow {
@@ -40,69 +41,137 @@ export class GraphRepository {
     tenantId: string,
     depth: number,
   ): Promise<GraphResponse> {
+    console.log('🚀 fetchGraph START', { focalPersonId, tenantId, depth })
+
     const [ancestors, descendants] = await Promise.all([
       this.fetchAncestors(focalPersonId, tenantId, depth),
       this.fetchDescendants(focalPersonId, tenantId, depth),
     ])
 
-    // Merge persons — focal person appears in both, deduplicate
+    console.log('📦 ancestors', ancestors.persons.length)
+    console.log('📦 descendants', descendants.persons.length)
+
+    // 🔍 CHECK DATA RAW
+    console.log('🔍 sample ancestor', ancestors.persons[0])
+    console.log('🔍 sample descendant', descendants.persons[0])
+
+    // Merge persons
     const personMap = new Map<string, RawPersonRow>()
 
-    // Focal person at generation 0
     const focalPerson =
       ancestors.persons.find((p) => p.id === focalPersonId) ??
       descendants.persons.find((p) => p.id === focalPersonId)
+
+    console.log('🎯 focalPerson', focalPerson)
 
     if (focalPerson) {
       personMap.set(focalPerson.id, { ...focalPerson, generation: 0 })
     }
 
     for (const p of ancestors.persons) {
-      if (!personMap.has(p.id)) personMap.set(p.id, p)
-    }
-    for (const p of descendants.persons) {
+      if (!p.id) console.error('❌ ancestor missing id', p)
+      if (p.generation == null) console.warn('⚠️ ancestor missing generation', p)
+
       if (!personMap.has(p.id)) personMap.set(p.id, p)
     }
 
-    // Merge edges — deduplicate by id
+    for (const p of descendants.persons) {
+      if (!p.id) console.error('❌ descendant missing id', p)
+      if (p.generation == null) console.warn('⚠️ descendant missing generation', p)
+
+      if (!personMap.has(p.id)) personMap.set(p.id, p)
+    }
+
+    console.log('👥 merged persons', personMap.size)
+
+    // Merge edges
     const edgeMap = new Map<string, RawRelationshipRow>()
     for (const e of [...ancestors.relationships, ...descendants.relationships]) {
+      if (!e.id) console.error('❌ edge missing id', e)
       edgeMap.set(e.id, e)
     }
 
-    // Determine hasMore flags
-    const maxAncestorDepth = Math.max(0, ...ancestors.persons.map((p) => p.generation))
+    console.log('🔗 merged edges', edgeMap.size)
+
+    // 🚨 DEBUG GENERATION (IMPORTANT)
+    const ancestorGenerations = ancestors.persons.map((p) => p.generation)
+    const descendantGenerations = descendants.persons.map((p) => p.generation)
+
+    console.log('📊 ancestor generations', ancestorGenerations)
+    console.log('📊 descendant generations', descendantGenerations)
+
+    const maxAncestorDepth = Math.max(0, ...ancestorGenerations.map((g) => g ?? 0))
+
     const maxDescendantDepth = Math.max(
       0,
-      ...descendants.persons.map((p) => Math.abs(p.generation)),
+      ...descendantGenerations.map((g) => Math.abs(g ?? 0)),
     )
+
+    console.log('📏 max depths', {
+      maxAncestorDepth,
+      maxDescendantDepth,
+    })
 
     const ancestorPersonIds = new Set(ancestors.persons.map((p) => p.id))
     const descendantPersonIds = new Set(descendants.persons.map((p) => p.id))
 
-    // Check if there are more levels beyond current depth
-    const [hasMoreAncestorsMap, hasMoreDescendantsMap] = await Promise.all([
-      this.checkHasMoreAncestors(
-        Array.from(ancestorPersonIds),
-        tenantId,
-        depth,
-        ancestors.persons,
-      ),
-      this.checkHasMoreDescendants(
-        Array.from(descendantPersonIds),
-        tenantId,
-        depth,
-        descendants.persons,
-      ),
-    ])
+    console.log('🧬 ancestor ids', ancestorPersonIds.size)
+    console.log('🧬 descendant ids', descendantPersonIds.size)
 
-    const nodes: GraphNode[] = Array.from(personMap.values()).map((p) =>
-      this.toGraphNode(p, hasMoreAncestorsMap, hasMoreDescendantsMap),
-    )
+    let hasMoreAncestorsMap: Map<string, boolean>
+    let hasMoreDescendantsMap: Map<string, boolean>
 
-    const edges: GraphEdge[] = Array.from(edgeMap.values()).map((r) =>
-      this.toGraphEdge(r),
-    )
+    try {
+      hasMoreAncestorsMap =
+        ancestorPersonIds.size > 0
+          ? await this.checkHasMoreAncestors(
+              Array.from(ancestorPersonIds),
+              tenantId,
+              depth,
+              ancestors.persons,
+            )
+          : new Map()
+
+      hasMoreDescendantsMap =
+        descendantPersonIds.size > 0
+          ? await this.checkHasMoreDescendants(
+              Array.from(descendantPersonIds),
+              tenantId,
+              depth,
+              descendants.persons,
+            )
+          : new Map()
+    } catch (err) {
+      console.error('❌ ERROR checkHasMore', err)
+      throw err
+    }
+
+    console.log('📌 hasMoreAncestorsMap size', hasMoreAncestorsMap.size)
+    console.log('📌 hasMoreDescendantsMap size', hasMoreDescendantsMap.size)
+
+    // 🔥 CRITICAL DEBUG
+    const nodes: GraphNode[] = Array.from(personMap.values()).map((p) => {
+      try {
+        return this.toGraphNode(p, hasMoreAncestorsMap, hasMoreDescendantsMap)
+      } catch (err) {
+        console.error('❌ toGraphNode error', p, err)
+        throw err
+      }
+    })
+
+    const edges: GraphEdge[] = Array.from(edgeMap.values()).map((r) => {
+      try {
+        return this.toGraphEdge(r)
+      } catch (err) {
+        console.error('❌ toGraphEdge error', r, err)
+        throw err
+      }
+    })
+
+    console.log('✅ FINAL', {
+      nodes: nodes.length,
+      edges: edges.length,
+    })
 
     return {
       nodes,
@@ -428,25 +497,30 @@ export class GraphRepository {
     const result = new Map<string, boolean>()
     if (personIds.length === 0) return result
 
-    // Find persons at the deepest ancestor level
-    const maxGen = Math.max(...persons.map((p) => p.generation))
+    // ambil generasi terdalam (ancestor biasanya positif)
+    const maxGen = Math.max(...persons.map((p) => p.generation ?? 0))
     const deepestPersons = persons.filter((p) => p.generation === maxGen)
 
     if (deepestPersons.length === 0) return result
 
     const deepestIds = deepestPersons.map((p) => p.id)
 
-    const hasMoreResult = await this.db.execute<{ person2_id: string }>(sql`
-      SELECT DISTINCT r.person2_id
-      FROM relationships r
-      WHERE r.type = 'parent-child'
-        AND r.tenant_id = ${tenantId}
-        AND r.deleted_at IS NULL
-        AND r.person2_id = ANY(${sql.raw(`ARRAY[${deepestIds.map((id) => `'${id}'`).join(',')}]::uuid[]`)})
-        AND r.person1_id NOT IN (${sql.raw(`ARRAY[${personIds.map((id) => `'${id}'`).join(',')}]::uuid[]`)})
-    `)
+    const rows = await this.db
+      .selectDistinct({
+        person2Id: relationships.person2Id,
+      })
+      .from(relationships)
+      .where(
+        and(
+          eq(relationships.type, 'parent-child'),
+          eq(relationships.tenantId, tenantId),
+          isNull(relationships.deletedAt),
+          inArray(relationships.person2Id, deepestIds),
+          notInArray(relationships.person1Id, personIds),
+        ),
+      )
 
-    const hasMoreSet = new Set(hasMoreResult.rows.map((r) => r.person2_id))
+    const hasMoreSet = new Set(rows.map((r) => r.person2Id))
 
     for (const p of persons) {
       result.set(p.id, hasMoreSet.has(p.id))
@@ -464,25 +538,30 @@ export class GraphRepository {
     const result = new Map<string, boolean>()
     if (personIds.length === 0) return result
 
-    // Find persons at the deepest descendant level
-    const minGen = Math.min(...persons.map((p) => p.generation))
+    // descendant biasanya negatif (atau paling kecil)
+    const minGen = Math.min(...persons.map((p) => p.generation ?? 0))
     const deepestPersons = persons.filter((p) => p.generation === minGen)
 
     if (deepestPersons.length === 0) return result
 
     const deepestIds = deepestPersons.map((p) => p.id)
 
-    const hasMoreResult = await this.db.execute<{ person1_id: string }>(sql`
-      SELECT DISTINCT r.person1_id
-      FROM relationships r
-      WHERE r.type = 'parent-child'
-        AND r.tenant_id = ${tenantId}
-        AND r.deleted_at IS NULL
-        AND r.person1_id = ANY(${sql.raw(`ARRAY[${deepestIds.map((id) => `'${id}'`).join(',')}]::uuid[]`)})
-        AND r.person2_id NOT IN (${sql.raw(`ARRAY[${personIds.map((id) => `'${id}'`).join(',')}]::uuid[]`)})
-    `)
+    const rows = await this.db
+      .selectDistinct({
+        person1Id: relationships.person1Id,
+      })
+      .from(relationships)
+      .where(
+        and(
+          eq(relationships.type, 'parent-child'),
+          eq(relationships.tenantId, tenantId),
+          isNull(relationships.deletedAt),
+          inArray(relationships.person1Id, deepestIds),
+          notInArray(relationships.person2Id, personIds),
+        ),
+      )
 
-    const hasMoreSet = new Set(hasMoreResult.rows.map((r) => r.person1_id))
+    const hasMoreSet = new Set(rows.map((r) => r.person1Id))
 
     for (const p of persons) {
       result.set(p.id, hasMoreSet.has(p.id))

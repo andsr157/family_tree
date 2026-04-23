@@ -1,31 +1,25 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { and, eq, isNull, sql } from 'drizzle-orm'
-import { familyTrees, treeCollaborators } from '@/db/schema'
+import { BaseRepository } from '@/common/base/base.repository'
 import { DATABASE } from '@/db/database.module'
-import type {
-  DatabaseClient,
-  DatabaseTx,
-  TransactionCallback,
-} from '@/db/database.module'
+import type { DatabaseClient, DatabaseTx } from '@/db/database.module'
+import { familyTrees, treeCollaborators } from '@/db/schema'
 import type { CreateFamilyTreeDto } from './dto/create-trees.dto'
 import type { UpdateFamilyTreeDto } from './dto/update-trees.dto'
 import type { QueryFamilyTreeDto } from './dto/query-trees.dto'
 
 @Injectable()
-export class FamilyTreesRepository {
-  constructor(@Inject(DATABASE) private db: DatabaseClient) {}
-
-  async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
-    return this.db.transaction(callback)
+export class FamilyTreesRepository extends BaseRepository {
+  constructor(@Inject(DATABASE) protected override readonly db: DatabaseClient) {
+    super(db)
   }
 
-  // Find trees the user has access to (owns or collaborates on)
   async findManyForUser(userId: string, tenantId: string, query: QueryFamilyTreeDto) {
     const { page, pageSize } = query
     const offset = pageSize * (page - 1)
 
     return this.db.query.familyTrees.findMany({
-      where: and(eq(familyTrees.tenantId, tenantId), isNull(familyTrees.deletedAt)),
+      where: this.buildScopedWhere(familyTrees.tenantId, tenantId, familyTrees.deletedAt),
       limit: pageSize,
       offset,
       orderBy: (ft, { desc }) => [desc(ft.createdAt)],
@@ -54,16 +48,17 @@ export class FamilyTreesRepository {
     const result = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(familyTrees)
-      .where(and(eq(familyTrees.tenantId, tenantId), isNull(familyTrees.deletedAt)))
+      .where(this.buildScopedWhere(familyTrees.tenantId, tenantId, familyTrees.deletedAt))
     return result[0]?.count ?? 0
   }
 
   async findById(id: string, tenantId: string) {
     return this.db.query.familyTrees.findFirst({
-      where: and(
+      where: this.buildScopedWhere(
+        familyTrees.tenantId,
+        tenantId,
+        familyTrees.deletedAt,
         eq(familyTrees.id, id),
-        eq(familyTrees.tenantId, tenantId),
-        isNull(familyTrees.deletedAt),
       ),
       with: {
         rootPerson: {
@@ -119,10 +114,11 @@ export class FamilyTreesRepository {
       .update(familyTrees)
       .set({ ...data, updatedAt: new Date() })
       .where(
-        and(
+        this.buildScopedWhere(
+          familyTrees.tenantId,
+          tenantId,
+          familyTrees.deletedAt,
           eq(familyTrees.id, id),
-          eq(familyTrees.tenantId, tenantId),
-          isNull(familyTrees.deletedAt),
         ),
       )
       .returning()
@@ -140,17 +136,17 @@ export class FamilyTreesRepository {
         updatedBy: deletedBy,
       })
       .where(
-        and(
+        this.buildScopedWhere(
+          familyTrees.tenantId,
+          tenantId,
+          familyTrees.deletedAt,
           eq(familyTrees.id, id),
-          eq(familyTrees.tenantId, tenantId),
-          isNull(familyTrees.deletedAt),
         ),
       )
       .returning()
     return tree
   }
 
-  // Node position persistence (hybrid layout)
   async updateNodePositions(
     id: string,
     tenantId: string,
@@ -169,17 +165,14 @@ export class FamilyTreesRepository {
         updatedAt: new Date(),
       })
       .where(
-        and(
+        this.buildScopedWhere(
+          familyTrees.tenantId,
+          tenantId,
+          familyTrees.deletedAt,
           eq(familyTrees.id, id),
-          eq(familyTrees.tenantId, tenantId),
-          isNull(familyTrees.deletedAt),
         ),
       )
       .returning()
     return tree
-  }
-
-  private getClient(tx?: DatabaseTx) {
-    return tx ?? this.db
   }
 }

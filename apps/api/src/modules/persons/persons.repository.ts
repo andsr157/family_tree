@@ -1,11 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common'
-import { and, asc, desc, eq, like, isNull, or, sql, type SQL } from 'drizzle-orm'
+import { and, asc, desc, eq, like, or, sql, type SQL } from 'drizzle-orm'
+import { BaseRepository } from '@/common/base/base.repository'
 import { DATABASE } from '@/db/database.module'
-import type {
-  DatabaseClient,
-  DatabaseTx,
-  TransactionCallback,
-} from '@/db/database.module'
+import type { DatabaseClient, DatabaseTx } from '@/db/database.module'
 import { persons } from '@/db/schema'
 import type { CreatePersonDto } from './dto/create-person.dto'
 import type { UpdatePersonDto } from './dto/update-person.dto'
@@ -26,13 +23,10 @@ export interface PersonQueryOptions {
 }
 
 @Injectable()
-export class PersonsRepository {
-  constructor(@Inject(DATABASE) private db: DatabaseClient) {}
-
-  async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
-    return this.db.transaction(callback)
+export class PersonsRepository extends BaseRepository {
+  constructor(@Inject(DATABASE) protected override readonly db: DatabaseClient) {
+    super(db)
   }
-
   async findMany(filters: PersonFilters, options: PersonQueryOptions) {
     const orderBy =
       options.orderByDir === 'asc'
@@ -128,10 +122,6 @@ export class PersonsRepository {
     return person
   }
 
-  private getClient(tx?: DatabaseTx) {
-    return tx ?? this.db
-  }
-
   private buildWhere(
     filters: Pick<PersonFilters, 'tenantId'>,
     ...extraConditions: SQL[]
@@ -140,7 +130,11 @@ export class PersonsRepository {
   }
 
   private buildConditions(filters: PersonFilters | Pick<PersonFilters, 'tenantId'>) {
-    const conditions: SQL[] = this.buildScopeConditions(filters.tenantId)
+    const conditions: SQL[] = this.buildScopeConditions(
+      persons.tenantId,
+      persons.deletedAt,
+      filters.tenantId,
+    )
 
     if ('search' in filters && filters.search) {
       conditions.push(
@@ -157,9 +151,5 @@ export class PersonsRepository {
     }
 
     return conditions
-  }
-
-  private buildScopeConditions(tenantId: string): SQL[] {
-    return [eq(persons.tenantId, tenantId), isNull(persons.deletedAt)]
   }
 }

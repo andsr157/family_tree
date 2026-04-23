@@ -1,12 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { and, asc, desc, eq, ilike, isNull, sql, type SQL } from 'drizzle-orm'
-import { citations, sources } from '@/db/schema'
+import { BaseRepository } from '@/common/base/base.repository'
 import { DATABASE } from '@/db/database.module'
-import type {
-  DatabaseClient,
-  DatabaseTx,
-  TransactionCallback,
-} from '@/db/database.module'
+import type { DatabaseClient, DatabaseTx } from '@/db/database.module'
+import { citations, sources } from '@/db/schema'
 import type {
   SourceType,
   ConfidenceLevel,
@@ -24,11 +21,9 @@ export interface SourceFilters {
 }
 
 @Injectable()
-export class SourcesRepository {
-  constructor(@Inject(DATABASE) private db: DatabaseClient) {}
-
-  async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
-    return this.db.transaction(callback)
+export class SourcesRepository extends BaseRepository {
+  constructor(@Inject(DATABASE) protected override readonly db: DatabaseClient) {
+    super(db)
   }
 
   async findMany(filters: SourceFilters, query: QuerySourceDto) {
@@ -89,7 +84,6 @@ export class SourcesRepository {
     })
   }
 
-  // Used by CitationsService to assert a source exists
   async assertExists(tenantId: string, id: string) {
     return this.db.query.sources.findFirst({
       where: this.buildWhere({ tenantId }, eq(sources.id, id)),
@@ -98,7 +92,6 @@ export class SourcesRepository {
   }
 
   async countCitations(sourceId: string, tenantId: string): Promise<number> {
-    const { citations } = await import('@/db/schema')
     const result = await this.db
       .select({ count: sql<number>`count(*)::int` })
       .from(citations)
@@ -154,10 +147,6 @@ export class SourcesRepository {
     return source
   }
 
-  private getClient(tx?: DatabaseTx) {
-    return tx ?? this.db
-  }
-
   private buildWhere(
     filters: Pick<SourceFilters, 'tenantId'> | SourceFilters,
     ...extra: SQL[]
@@ -166,14 +155,13 @@ export class SourcesRepository {
   }
 
   private buildConditions(filters: Pick<SourceFilters, 'tenantId'> | SourceFilters) {
-    const conditions: SQL[] = [
-      eq(sources.tenantId, filters.tenantId),
-      isNull(sources.deletedAt),
-    ]
+    const conditions: SQL[] = this.buildScopeConditions(
+      sources.tenantId,
+      sources.deletedAt,
+      filters.tenantId,
+    )
 
     if ('type' in filters && filters.type) {
-      // Only allow valid enum values for sourceType
-
       if (SOURCE_TYPES.includes(filters.type as SourceType)) {
         conditions.push(eq(sources.sourceType, filters.type as SourceType))
       }

@@ -1,15 +1,11 @@
 import { Injectable, Inject } from '@nestjs/common'
-import { and, eq, isNull, ne, or, type SQL } from 'drizzle-orm'
-import { relationships } from '@/db/schema'
+import { and, eq, ne, or, type SQL } from 'drizzle-orm'
+import { BaseRepository } from '@/common/base/base.repository'
 import { DATABASE } from '@/db/database.module'
+import type { DatabaseClient, DatabaseTx } from '@/db/database.module'
+import { relationships } from '@/db/schema'
 import type { CreateRelationshipDto } from './dto/create-relationship.dto'
 import type { UpdateRelationshipDto } from './dto/update-relationship.dto'
-
-import type {
-  DatabaseClient,
-  DatabaseTx,
-  TransactionCallback,
-} from '@/db/database.module'
 
 export interface RelationshipFilters {
   tenantId: string
@@ -28,11 +24,9 @@ const relationshipPersonSummaryColumns = {
 } as const
 
 @Injectable()
-export class RelationshipsRepository {
-  constructor(@Inject(DATABASE) private db: DatabaseClient) {}
-
-  async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
-    return this.db.transaction(callback)
+export class RelationshipsRepository extends BaseRepository {
+  constructor(@Inject(DATABASE) protected override readonly db: DatabaseClient) {
+    super(db)
   }
 
   async findManyByPerson(filters: RelationshipFilters) {
@@ -161,10 +155,6 @@ export class RelationshipsRepository {
     return relationship
   }
 
-  private getClient(tx?: DatabaseTx) {
-    return tx ?? this.db
-  }
-
   private buildWhere(
     filters: Pick<RelationshipFilters, 'tenantId'> | RelationshipFilters,
     ...extraConditions: SQL[]
@@ -175,7 +165,11 @@ export class RelationshipsRepository {
   private buildConditions(
     filters: Pick<RelationshipFilters, 'tenantId'> | RelationshipFilters,
   ) {
-    const conditions: SQL[] = this.buildScopeConditions(filters.tenantId)
+    const conditions: SQL[] = this.buildScopeConditions(
+      relationships.tenantId,
+      relationships.deletedAt,
+      filters.tenantId,
+    )
 
     if ('personId' in filters && filters.personId) {
       conditions.push(
@@ -198,9 +192,5 @@ export class RelationshipsRepository {
       and(eq(relationships.person1Id, person1Id), eq(relationships.person2Id, person2Id)),
       and(eq(relationships.person1Id, person2Id), eq(relationships.person2Id, person1Id)),
     )!
-  }
-
-  private buildScopeConditions(tenantId: string): SQL[] {
-    return [eq(relationships.tenantId, tenantId), isNull(relationships.deletedAt)]
   }
 }

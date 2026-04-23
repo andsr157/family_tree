@@ -30,4 +30,12 @@ export abstract class BaseRepository {
       ...extra.filter((c): c is SQL => c !== undefined),
     )
   }
+
+  protected buildScopeConditions(
+    tenantIdColumn: Parameters<typeof eq>[0],
+    deletedAtColumn: Parameters<typeof isNull>[0],
+    tenantId: string,
+  ): SQL[] {
+    return [eq(tenantIdColumn, tenantId), isNull(deletedAtColumn)]
+  }
 }

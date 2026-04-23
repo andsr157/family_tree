@@ -1,21 +1,16 @@
 import { Injectable, Inject } from '@nestjs/common'
 import { and, eq, isNull, type SQL } from 'drizzle-orm'
-import { citations } from '@/db/schema'
+import { BaseRepository } from '@/common/base/base.repository'
 import { DATABASE } from '@/db/database.module'
-import type {
-  DatabaseClient,
-  DatabaseTx,
-  TransactionCallback,
-} from '@/db/database.module'
+import type { DatabaseClient, DatabaseTx } from '@/db/database.module'
+import { citations } from '@/db/schema'
 import type { CreateCitationDto } from './dto/create-citation.dto'
 import type { UpdateCitationDto } from './dto/update-citation.dto'
 
 @Injectable()
-export class CitationsRepository {
-  constructor(@Inject(DATABASE) private db: DatabaseClient) {}
-
-  async withTransaction<T>(callback: TransactionCallback<T>): Promise<T> {
-    return this.db.transaction(callback)
+export class CitationsRepository extends BaseRepository {
+  constructor(@Inject(DATABASE) protected override readonly db: DatabaseClient) {
+    super(db)
   }
 
   async findBySource(sourceId: string, tenantId: string) {
@@ -99,10 +94,6 @@ export class CitationsRepository {
       .where(this.buildWhere({ tenantId }, eq(citations.id, id)))
       .returning()
     return citation
-  }
-
-  private getClient(tx?: DatabaseTx) {
-    return tx ?? this.db
   }
 
   private buildWhere(filters: { tenantId: string }, ...extra: SQL[]) {
