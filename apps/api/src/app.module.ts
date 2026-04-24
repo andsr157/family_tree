@@ -15,6 +15,7 @@ import { CitationsModule } from './modules/citations/citations.module'
 import { SourcesModule } from './modules/sources/sources.module'
 import { AuditLogsModule } from './modules/audit-logs/audit-logs.module'
 import { FamilyTreesModule } from './modules/trees/trees.module'
+import { TenantInvitationsModule } from './modules/tenant-invitations/tenant-invitations.module'
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { FamilyTreesModule } from './modules/trees/trees.module'
     SourcesModule,
     CitationsModule,
     FamilyTreesModule,
+    TenantInvitationsModule,
   ],
   providers: [
     {

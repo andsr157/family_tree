@@ -1,4 +1,10 @@
-import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/common'
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common'
 import { AuthRepository } from './repositories/auth.repository'
 import { SessionRepository } from './repositories/session.repository'
 import * as bcrypt from 'bcrypt'
@@ -11,6 +17,8 @@ export class AuthService {
     private authRepo: AuthRepository,
     private sessionRepo: SessionRepository,
   ) {}
+
+  // ─── Register tenant (legacy flow, still available) ──────────────────────
 
   async registerTenant(
     data: {
@@ -85,6 +93,58 @@ export class AuthService {
     }
   }
 
+  /**
+   * Register a new account WITHOUT creating a tenant.
+   * After registration, user logs in and will be directed to:
+   * - Create a new tenant, or
+   * - Join a tenant via invitation code
+   */
+  async register(
+    data: {
+      fullName: string
+      email: string
+      password: string
+    },
+    meta: { ip: string; userAgent: string },
+  ) {
+    const existingUser = await this.authRepo.findUserByEmail(data.email)
+    if (existingUser) {
+      throw new ConflictException('Email is already registered')
+    }
+
+    const passwordHash = await bcrypt.hash(data.password, BCRYPT_ROUNDS)
+
+    const user = await this.authRepo.withTransaction(async (tx) => {
+      const newUser = await this.authRepo.insertUser(
+        {
+          email: data.email,
+          password: passwordHash,
+          fullName: data.fullName,
+          createdBy: null,
+        },
+        tx,
+      )
+
+      // Self-reference created_by
+      await this.authRepo.updateUserCreatedBy(newUser.id, newUser.id, tx)
+
+      return newUser
+    })
+
+    const sessionId = await this.sessionRepo.createSession(user.id, meta)
+
+    return {
+      sessionId,
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.fullName,
+      },
+      tenants: [],
+      hasNoTenant: true,
+    }
+  }
+
   async login(
     data: { email: string; password: string },
     meta: { ip: string; userAgent: string },
@@ -99,7 +159,6 @@ export class AuthService {
 
     const memberships = await this.authRepo.findUserMemberships(user.id)
 
-    // Update last login
     await this.authRepo.updateUserLastLogin(user.id)
 
     const sessionId = await this.sessionRepo.createSession(user.id, meta)
@@ -125,11 +184,136 @@ export class AuthService {
         tenantList.length === 1
           ? { id: tenantList[0].id, name: tenantList[0].name }
           : null,
+      // Flag for frontend: should onboarding page be shown?
+      hasNoTenant: tenantList.length === 0,
     }
+  }
+
+  // Create new tenant (after login, no tenant yet)
+
+  /**
+   * Called by a user who is already logged in but does not have a tenant yet.
+   * Creates a new tenant and makes the user the owner.
+   */
+  async createTenant(data: { tenantName: string; slug: string }, userId: string) {
+    const existingTenant = await this.authRepo.findTenantBySlug(data.slug)
+    if (existingTenant) {
+      throw new ConflictException('Slug is already taken, try another one')
+    }
+
+    return this.authRepo.withTransaction(async (tx) => {
+      const tenant = await this.authRepo.insertTenant(
+        { name: data.tenantName, slug: data.slug, createdBy: userId },
+        tx,
+      )
+
+      await this.authRepo.insertTenantMember(
+        {
+          tenantId: tenant.id,
+          userId,
+          role: 'owner',
+          status: 'active',
+          joinedAt: new Date(),
+          createdBy: userId,
+        },
+        tx,
+      )
+
+      return {
+        tenant: {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+        },
+        role: 'owner' as const,
+      }
+    })
+  }
+
+  // Join tenant via invitation code
+
+  /**
+   * Called by a user who is already logged in and wants to join
+   * an existing tenant using an invitation code.
+   *
+   * Code received is already normalized by Zod schema (no dashes, uppercase).
+   */
+  async joinTenant(normalizedCode: string, userId: string) {
+    // 1. Find invitation
+    const invitation = await this.authRepo.findActiveInvitation(normalizedCode)
+
+    if (!invitation) {
+      throw new NotFoundException('Invitation code not found or not active')
+    }
+
+    // 2. Check expired
+    if (invitation.expiresAt && new Date() > invitation.expiresAt) {
+      throw new BadRequestException('Invitation code has expired')
+    }
+
+    // 3. Check max uses
+    if (invitation.maxUses !== null && invitation.usedCount >= invitation.maxUses) {
+      throw new BadRequestException('Invitation code has reached usage limit')
+    }
+
+    // 4. Check if user is already a member of this tenant
+    const alreadyMember = await this.authRepo.isAlreadyMember(userId, invitation.tenantId)
+    if (alreadyMember) {
+      throw new ConflictException('You are already a member of this family')
+    }
+
+    // 5. Find tenant data
+    const tenant = await this.authRepo.findTenantById(invitation.tenantId)
+    if (!tenant) {
+      throw new NotFoundException('Family not found')
+    }
+
+    // 6. Add user to tenant and increment used_count
+    return this.authRepo.withTransaction(async (tx) => {
+      await this.authRepo.insertTenantMember(
+        {
+          tenantId: invitation.tenantId,
+          userId,
+          role: invitation.role as 'admin' | 'member',
+          status: 'active',
+          joinedAt: new Date(),
+          createdBy: userId,
+          invitedBy: invitation.id, // reference to invitation
+        },
+        tx,
+      )
+
+      await this.authRepo.incrementInvitationUsedCount(invitation.id, tx)
+
+      return {
+        tenant: {
+          id: tenant.id,
+          name: tenant.name,
+          slug: tenant.slug,
+        },
+        role: invitation.role,
+      }
+    })
   }
 
   async logout(sessionId: string, userId: string): Promise<void> {
     await this.sessionRepo.deleteSession(sessionId, userId)
+  }
+
+  async validateInvitationCode(code: string) {
+    const invitation = await this.authRepo.findActiveInvitation(code)
+    if (!invitation) {
+      throw new NotFoundException('Invitation code not found or not active')
+    }
+    if (invitation.expiresAt && new Date() > invitation.expiresAt) {
+      throw new BadRequestException('Invitation code has expired')
+    }
+    const tenant = await this.authRepo.findTenantById(invitation.tenantId)
+    return {
+      valid: true,
+      tenantName: tenant?.name ?? null,
+      role: invitation.role,
+    }
   }
 
   async getMe(userId: string, tenantId: string) {

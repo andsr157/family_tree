@@ -1,10 +1,9 @@
-// core/auth/repositories/auth.repository.ts
 import { Injectable, Inject } from '@nestjs/common'
-import { eq, and, isNull } from 'drizzle-orm'
-import { users, tenants, tenantMembers } from '../../../db/schema'
-import { DATABASE } from '../../../db/database.module'
-import type { DatabaseClient } from '../../../db/database.module'
-import type { DatabaseTx, TransactionCallback } from '../../../db/database.module'
+import { eq, and, isNull, sql } from 'drizzle-orm'
+import { users, tenants, tenantMembers, tenantInvitations } from '@/db/schema'
+import { DATABASE } from '@/db/database.module'
+import type { DatabaseClient } from '@/db/database.module'
+import type { DatabaseTx, TransactionCallback } from '@/db/database.module'
 
 @Injectable()
 export class AuthRepository {
@@ -62,6 +61,8 @@ export class AuthRepository {
       .where(eq(users.id, userId))
   }
 
+  // ─── Tenant queries ───────────────────────────────────────────────────────
+
   async findTenantBySlug(slug: string) {
     const [tenant] = await this.db
       .select({ id: tenants.id })
@@ -89,6 +90,8 @@ export class AuthRepository {
     await client.update(tenants).set({ createdBy }).where(eq(tenants.id, tenantId))
   }
 
+  // ─── Tenant member queries ────────────────────────────────────────────────
+
   async insertTenantMember(
     data: {
       tenantId: string
@@ -97,6 +100,7 @@ export class AuthRepository {
       status: string
       joinedAt: Date
       createdBy: string
+      invitedBy?: string
     },
     tx?: DatabaseTx,
   ) {
@@ -145,5 +149,69 @@ export class AuthRepository {
       )
       .limit(1)
     return membership ?? null
+  }
+
+  async isAlreadyMember(userId: string, tenantId: string): Promise<boolean> {
+    const [member] = await this.db
+      .select({ id: tenantMembers.id })
+      .from(tenantMembers)
+      .where(
+        and(
+          eq(tenantMembers.userId, userId),
+          eq(tenantMembers.tenantId, tenantId),
+          isNull(tenantMembers.deletedAt),
+        ),
+      )
+      .limit(1)
+    return !!member
+  }
+
+  // ─── Invitation queries ───────────────────────────────────────────────────
+
+  /**
+   * Cari invitation berdasarkan kode (sudah di-normalize, tanpa dash).
+   * Hanya return invitation yang masih aktif dan belum expired.
+   */
+  async findActiveInvitation(normalizedCode: string) {
+    const [invitation] = await this.db
+      .select({
+        id: tenantInvitations.id,
+        tenantId: tenantInvitations.tenantId,
+        code: tenantInvitations.code,
+        role: tenantInvitations.role,
+        label: tenantInvitations.label,
+        expiresAt: tenantInvitations.expiresAt,
+        maxUses: tenantInvitations.maxUses,
+        usedCount: tenantInvitations.usedCount,
+        isActive: tenantInvitations.isActive,
+      })
+      .from(tenantInvitations)
+      .where(
+        and(
+          eq(tenantInvitations.code, normalizedCode),
+          eq(tenantInvitations.isActive, true),
+        ),
+      )
+      .limit(1)
+    return invitation ?? null
+  }
+
+  async incrementInvitationUsedCount(invitationId: string, tx?: DatabaseTx) {
+    const client = tx ?? this.db
+    await client
+      .update(tenantInvitations)
+      .set({
+        usedCount: sql`${tenantInvitations.usedCount} + 1`,
+      })
+      .where(eq(tenantInvitations.id, invitationId))
+  }
+
+  async findTenantById(tenantId: string) {
+    const [tenant] = await this.db
+      .select()
+      .from(tenants)
+      .where(and(eq(tenants.id, tenantId), isNull(tenants.deletedAt)))
+      .limit(1)
+    return tenant ?? null
   }
 }

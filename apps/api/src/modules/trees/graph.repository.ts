@@ -35,7 +35,7 @@ interface RawRelationshipRow {
 export class GraphRepository {
   constructor(@Inject(DATABASE) private db: DatabaseClient) {}
 
-  // ─── Main graph fetch: focal person + N generations up & down ────────────
+  // Main graph fetch: focal person + N generations up & down
   async fetchGraph(
     focalPersonId: string,
     tenantId: string,
@@ -43,135 +43,83 @@ export class GraphRepository {
   ): Promise<GraphResponse> {
     console.log('🚀 fetchGraph START', { focalPersonId, tenantId, depth })
 
-    const [ancestors, descendants] = await Promise.all([
-      this.fetchAncestors(focalPersonId, tenantId, depth),
-      this.fetchDescendants(focalPersonId, tenantId, depth),
-    ])
+    let ancestors: Awaited<ReturnType<typeof this.fetchAncestors>>
+    let descendants: Awaited<ReturnType<typeof this.fetchDescendants>>
+
+    try {
+      ;[ancestors, descendants] = await Promise.all([
+        this.fetchAncestors(focalPersonId, tenantId, depth),
+        this.fetchDescendants(focalPersonId, tenantId, depth),
+      ])
+    } catch (err) {
+      console.error('❌ fetchAncestors/fetchDescendants threw:', err)
+      throw err
+    }
 
     console.log('📦 ancestors', ancestors.persons.length)
     console.log('📦 descendants', descendants.persons.length)
 
-    // 🔍 CHECK DATA RAW
-    console.log('🔍 sample ancestor', ancestors.persons[0])
-    console.log('🔍 sample descendant', descendants.persons[0])
-
-    // Merge persons
     const personMap = new Map<string, RawPersonRow>()
-
     const focalPerson =
       ancestors.persons.find((p) => p.id === focalPersonId) ??
       descendants.persons.find((p) => p.id === focalPersonId)
 
-    console.log('🎯 focalPerson', focalPerson)
-
     if (focalPerson) {
       personMap.set(focalPerson.id, { ...focalPerson, generation: 0 })
     }
-
     for (const p of ancestors.persons) {
-      if (!p.id) console.error('❌ ancestor missing id', p)
-      if (p.generation == null) console.warn('⚠️ ancestor missing generation', p)
-
       if (!personMap.has(p.id)) personMap.set(p.id, p)
     }
-
     for (const p of descendants.persons) {
-      if (!p.id) console.error('❌ descendant missing id', p)
-      if (p.generation == null) console.warn('⚠️ descendant missing generation', p)
-
       if (!personMap.has(p.id)) personMap.set(p.id, p)
     }
 
-    console.log('👥 merged persons', personMap.size)
-
-    // Merge edges
     const edgeMap = new Map<string, RawRelationshipRow>()
     for (const e of [...ancestors.relationships, ...descendants.relationships]) {
-      if (!e.id) console.error('❌ edge missing id', e)
       edgeMap.set(e.id, e)
     }
-
-    console.log('🔗 merged edges', edgeMap.size)
-
-    // 🚨 DEBUG GENERATION (IMPORTANT)
-    const ancestorGenerations = ancestors.persons.map((p) => p.generation)
-    const descendantGenerations = descendants.persons.map((p) => p.generation)
-
-    console.log('📊 ancestor generations', ancestorGenerations)
-    console.log('📊 descendant generations', descendantGenerations)
-
-    const maxAncestorDepth = Math.max(0, ...ancestorGenerations.map((g) => g ?? 0))
-
-    const maxDescendantDepth = Math.max(
-      0,
-      ...descendantGenerations.map((g) => Math.abs(g ?? 0)),
-    )
-
-    console.log('📏 max depths', {
-      maxAncestorDepth,
-      maxDescendantDepth,
-    })
 
     const ancestorPersonIds = new Set(ancestors.persons.map((p) => p.id))
     const descendantPersonIds = new Set(descendants.persons.map((p) => p.id))
 
-    console.log('🧬 ancestor ids', ancestorPersonIds.size)
-    console.log('🧬 descendant ids', descendantPersonIds.size)
-
-    let hasMoreAncestorsMap: Map<string, boolean>
-    let hasMoreDescendantsMap: Map<string, boolean>
+    let hasMoreAncestorsMap = new Map<string, boolean>()
+    let hasMoreDescendantsMap = new Map<string, boolean>()
 
     try {
-      hasMoreAncestorsMap =
-        ancestorPersonIds.size > 0
-          ? await this.checkHasMoreAncestors(
-              Array.from(ancestorPersonIds),
-              tenantId,
-              depth,
-              ancestors.persons,
-            )
-          : new Map()
-
-      hasMoreDescendantsMap =
-        descendantPersonIds.size > 0
-          ? await this.checkHasMoreDescendants(
-              Array.from(descendantPersonIds),
-              tenantId,
-              depth,
-              descendants.persons,
-            )
-          : new Map()
+      if (ancestorPersonIds.size > 0) {
+        hasMoreAncestorsMap = await this.checkHasMoreAncestors(
+          Array.from(ancestorPersonIds),
+          tenantId,
+          depth,
+          ancestors.persons,
+        )
+      }
+      if (descendantPersonIds.size > 0) {
+        hasMoreDescendantsMap = await this.checkHasMoreDescendants(
+          Array.from(descendantPersonIds),
+          tenantId,
+          depth,
+          descendants.persons,
+        )
+      }
     } catch (err) {
-      console.error('❌ ERROR checkHasMore', err)
+      console.error('❌ checkHasMore threw:', err)
       throw err
     }
 
-    console.log('📌 hasMoreAncestorsMap size', hasMoreAncestorsMap.size)
-    console.log('📌 hasMoreDescendantsMap size', hasMoreDescendantsMap.size)
+    let nodes: GraphNode[]
+    let edges: GraphEdge[]
+    try {
+      nodes = Array.from(personMap.values()).map((p) =>
+        this.toGraphNode(p, hasMoreAncestorsMap, hasMoreDescendantsMap),
+      )
+      edges = Array.from(edgeMap.values()).map((r) => this.toGraphEdge(r))
+    } catch (err) {
+      console.error('❌ toGraphNode/toGraphEdge threw:', err)
+      throw err
+    }
 
-    // 🔥 CRITICAL DEBUG
-    const nodes: GraphNode[] = Array.from(personMap.values()).map((p) => {
-      try {
-        return this.toGraphNode(p, hasMoreAncestorsMap, hasMoreDescendantsMap)
-      } catch (err) {
-        console.error('❌ toGraphNode error', p, err)
-        throw err
-      }
-    })
-
-    const edges: GraphEdge[] = Array.from(edgeMap.values()).map((r) => {
-      try {
-        return this.toGraphEdge(r)
-      } catch (err) {
-        console.error('❌ toGraphEdge error', r, err)
-        throw err
-      }
-    })
-
-    console.log('✅ FINAL', {
-      nodes: nodes.length,
-      edges: edges.length,
-    })
+    console.log('✅ FINAL', { nodes: nodes.length, edges: edges.length })
 
     return {
       nodes,
@@ -181,7 +129,7 @@ export class GraphRepository {
     }
   }
 
-  // ─── Expand one level — for async expand/collapse ────────────────────────
+  // Expand one level - for async expand/collapse
   async expandAncestors(
     personId: string,
     tenantId: string,
@@ -246,7 +194,7 @@ export class GraphRepository {
     return { nodes, edges, focalPersonId: personId, totalNodes: nodes.length }
   }
 
-  // ─── Recursive CTE: fetch ancestors ──────────────────────────────────────
+  // Recursive CTE: fetch ancestors
   private async fetchAncestors(
     focalPersonId: string,
     tenantId: string,
@@ -341,63 +289,69 @@ export class GraphRepository {
     let allPersons = personsResult.rows
 
     if (couplePartnerIds.size > 0) {
-      const partnersResult = await this.db.execute<RawPersonRow>(sql`
-        SELECT
-          p.id,
-          p.first_name,
-          p.last_name,
-          p.nickname,
-          p.gender,
-          p.is_alive,
-          p.avatar_url,
-          p.linked_user_id IS NOT NULL AS is_linked_to_user,
-          p.is_claimable,
-          p.is_private,
-          -- Partners share generation with their partner
-          (
-            SELECT at2.generation FROM (
-              SELECT DISTINCT ON (id) id, generation
-              FROM (${sql.raw(`
-                WITH RECURSIVE ancestor_tree2 AS (
-                  SELECT p2.id, 0 AS generation, 0 AS depth
-                  FROM persons p2
-                  WHERE p2.id = '${focalPersonId}'
-                  AND p2.tenant_id = '${tenantId}'
-                  AND p2.deleted_at IS NULL
-                  UNION ALL
-                  SELECT parent2.id, at2.generation + 1, at2.depth + 1
-                  FROM persons parent2
-                  INNER JOIN relationships r2 ON r2.person1_id = parent2.id AND r2.type = 'parent-child' AND r2.tenant_id = '${tenantId}' AND r2.deleted_at IS NULL
-                  INNER JOIN ancestor_tree2 at2 ON at2.id = r2.person2_id
-                  WHERE parent2.deleted_at IS NULL AND at2.depth < ${depth}
-                )
-                SELECT * FROM ancestor_tree2
-              `)})  at2_inner
-              ORDER BY id, generation DESC
-            ) at2
-            WHERE at2.id = (
-              SELECT CASE
-                WHEN r3.person1_id = p.id THEN r3.person2_id
-                ELSE r3.person1_id
-              END
-              FROM relationships r3
-              WHERE (r3.person1_id = p.id OR r3.person2_id = p.id)
-                AND r3.type = 'couple'
-                AND r3.tenant_id = '${tenantId}'
-                AND r3.deleted_at IS NULL
-              LIMIT 1
-            )
-          ) AS generation,
-          0 AS depth
-        FROM persons p
-        WHERE p.id = ANY(${sql.raw(
-          `ARRAY[${Array.from(couplePartnerIds)
-            .map((id) => `'${id}'`)
-            .join(',')}]::uuid[]`,
-        )})
-          AND p.deleted_at IS NULL
-      `)
-      allPersons = [...allPersons, ...partnersResult.rows]
+      let partnersResult: { rows: RawPersonRow[] }
+      try {
+        const partnerIdsList = Array.from(couplePartnerIds)
+          .map((id) => `'${id}'`)
+          .join(',')
+        partnersResult = await this.db.execute<RawPersonRow>(
+          sql.raw(`
+          SELECT
+            p.id,
+            p.first_name,
+            p.last_name,
+            p.nickname,
+            p.gender,
+            p.is_alive,
+            p.avatar_url,
+            p.linked_user_id IS NOT NULL AS is_linked_to_user,
+            p.is_claimable,
+            p.is_private,
+            (
+              SELECT at2.generation FROM (
+                SELECT DISTINCT ON (id) id, generation
+                FROM (
+                  WITH RECURSIVE ancestor_tree2 AS (
+                    SELECT p2.id, 0 AS generation, 0 AS depth
+                    FROM persons p2
+                    WHERE p2.id = '${focalPersonId}'
+                    AND p2.tenant_id = '${tenantId}'
+                    AND p2.deleted_at IS NULL
+                    UNION ALL
+                    SELECT parent2.id, at2.generation + 1, at2.depth + 1
+                    FROM persons parent2
+                    INNER JOIN relationships r2 ON r2.person1_id = parent2.id AND r2.type = 'parent-child' AND r2.tenant_id = '${tenantId}' AND r2.deleted_at IS NULL
+                    INNER JOIN ancestor_tree2 at2 ON at2.id = r2.person2_id
+                    WHERE parent2.deleted_at IS NULL AND at2.depth < ${depth}
+                  )
+                  SELECT * FROM ancestor_tree2
+                ) at2_inner
+                ORDER BY id, generation DESC
+              ) at2
+              WHERE at2.id = (
+                SELECT CASE
+                  WHEN r3.person1_id = p.id THEN r3.person2_id
+                  ELSE r3.person1_id
+                END
+                FROM relationships r3
+                WHERE (r3.person1_id = p.id OR r3.person2_id = p.id)
+                  AND r3.type = 'couple'
+                  AND r3.tenant_id = '${tenantId}'
+                  AND r3.deleted_at IS NULL
+                LIMIT 1
+              )
+            ) AS generation,
+            0 AS depth
+          FROM persons p
+          WHERE p.id = ANY(ARRAY[${partnerIdsList}]::uuid[])
+            AND p.deleted_at IS NULL
+        `),
+        )
+        allPersons = [...allPersons, ...partnersResult.rows]
+      } catch (err) {
+        console.error('❌ partnersResult query failed:', err)
+        throw err
+      }
     }
 
     return { persons: allPersons, relationships: relationshipsResult.rows }
@@ -487,7 +441,7 @@ export class GraphRepository {
     return { persons: personsResult.rows, relationships: relationshipsResult.rows }
   }
 
-  // ─── Check if there are more levels beyond current fetch ─────────────────
+  // Check if there are more levels beyond current fetch
   private async checkHasMoreAncestors(
     personIds: string[],
     tenantId: string,
@@ -570,7 +524,7 @@ export class GraphRepository {
     return result
   }
 
-  // ─── Mappers ──────────────────────────────────────────────────────────────
+  // Mappers
   private toGraphNode(
     p: RawPersonRow,
     hasMoreAncestorsMap: Map<string, boolean>,
